@@ -46,8 +46,19 @@ class AudioDownloader:
             filename = os.path.basename(parsed.path)
             if not filename:
                 filename = "audio_file"
+        else:
+            # Sanitize filename - remove any directory components
+            # Only use the basename to avoid creating subdirectories
+            filename = os.path.basename(filename)
+            if not filename:
+                # Fallback: extract from URL if provided filename is invalid
+                parsed = urlparse(url)
+                filename = os.path.basename(parsed.path) or "audio_file"
 
         filepath = self.temp_dir / filename
+
+        # Ensure parent directory exists (should already exist, but be safe)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Downloading audio file: {url}")
         logger.info(f"Saving to: {filepath}")

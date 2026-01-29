@@ -4,6 +4,7 @@ Archive.org metadata scraper using the Archive.org Metadata API.
 Extracts track information, metadata, and background images from archive.org items.
 """
 
+import os
 import re
 import logging
 from typing import Dict, List, Optional
@@ -301,9 +302,12 @@ class ArchiveScraper:
             if any(filename.lower().endswith(ext) for ext in audio_extensions):
                 # Construct download URL
                 # Pattern: https://archive.org/download/IDENTIFIER/FILENAME
+                # Note: filename may include directory path, but URL needs full path
                 download_url = f"https://archive.org/download/{self.identifier}/{filename}"
+                # Sanitize filename for local storage (use basename only)
+                safe_filename = os.path.basename(filename)
                 audio_files.append({
-                    'filename': filename,
+                    'filename': safe_filename,  # Use sanitized filename for local storage
                     'url': download_url
                 })
 
