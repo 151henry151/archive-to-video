@@ -54,6 +54,30 @@ class ArchiveScraper:
             logger.error(f"Failed to parse JSON response: {e}")
             raise
 
+    @staticmethod
+    def _safe_get_string(api_metadata: Dict, key: str, default: str = '') -> str:
+        """
+        Safely extract a string value from API metadata.
+        
+        Archive.org API may return fields as strings or lists.
+        This helper converts lists to strings and handles None values.
+        
+        Args:
+            api_metadata: Metadata dictionary from API
+            key: Key to extract
+            default: Default value if key not found
+            
+        Returns:
+            String value (empty string if not found or invalid)
+        """
+        value = api_metadata.get(key, default)
+        if value is None:
+            return default
+        if isinstance(value, list):
+            # Join list items into a single string
+            return ' '.join(str(v) for v in value if v).strip()
+        return str(value).strip()
+
     def extract_metadata(self) -> Dict:
         """
         Extract all metadata from the API response.
@@ -89,17 +113,17 @@ class ArchiveScraper:
         metadata = {
             'identifier': self.identifier,
             'url': self.url,
-            'title': api_metadata.get('title', '').strip(),
+            'title': self._safe_get_string(api_metadata, 'title'),
             'artist': self._extract_artist(api_metadata),
-            'venue': api_metadata.get('venue', '').strip(),
-            'location': api_metadata.get('location', '').strip(),
-            'date': api_metadata.get('date', '').strip(),
-            'year': api_metadata.get('year', '').strip(),
-            'taped_by': api_metadata.get('tapedby', '').strip() or api_metadata.get('taped_by', '').strip(),
-            'transferred_by': api_metadata.get('transferredby', '').strip() or api_metadata.get('transferred_by', '').strip(),
-            'lineage': api_metadata.get('lineage', '').strip(),
+            'venue': self._safe_get_string(api_metadata, 'venue'),
+            'location': self._safe_get_string(api_metadata, 'location'),
+            'date': self._safe_get_string(api_metadata, 'date'),
+            'year': self._safe_get_string(api_metadata, 'year'),
+            'taped_by': self._safe_get_string(api_metadata, 'tapedby') or self._safe_get_string(api_metadata, 'taped_by'),
+            'transferred_by': self._safe_get_string(api_metadata, 'transferredby') or self._safe_get_string(api_metadata, 'transferred_by'),
+            'lineage': self._safe_get_string(api_metadata, 'lineage'),
             'topics': self._extract_topics(api_metadata),
-            'collection': api_metadata.get('collection', '').strip(),
+            'collection': self._safe_get_string(api_metadata, 'collection'),
             'description': description,
             'tracks': tracks,
             'background_image_url': background_image_url,
@@ -113,21 +137,21 @@ class ArchiveScraper:
         """Extract artist/band name from metadata."""
         # Try various field names
         artist = (
-            api_metadata.get('band') or
-            api_metadata.get('artist') or
-            api_metadata.get('creator') or
-            api_metadata.get('band/artist') or
+            self._safe_get_string(api_metadata, 'band') or
+            self._safe_get_string(api_metadata, 'artist') or
+            self._safe_get_string(api_metadata, 'creator') or
+            self._safe_get_string(api_metadata, 'band/artist') or
             ''
         )
         
         # If artist is in title (format: "Title by Artist"), extract it
         if not artist:
-            title = api_metadata.get('title', '')
+            title = self._safe_get_string(api_metadata, 'title')
             match = re.search(r'by\s+(.+?)(?:\s*$|\s*Publication)', title, re.IGNORECASE)
             if match:
                 artist = match.group(1).strip()
         
-        return artist.strip()
+        return artist
 
     def _extract_topics(self, api_metadata: Dict) -> List[str]:
         """Extract topics from metadata."""
