@@ -234,7 +234,9 @@ For detailed technical information about the architecture and implementation, se
 
 ## License
 
-This project is provided as-is for personal use.
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
+
+See [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
