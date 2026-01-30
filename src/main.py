@@ -126,7 +126,49 @@ class ArchiveToYouTube:
             )
             logger.info(f"Downloaded background image: {image_path}")
 
-            # Step 4: Process each track
+            # Step 4: Check for existing videos on YouTube
+            logger.info(f"\n{'='*60}")
+            logger.info("Step 4: Checking for existing videos on YouTube...")
+            logger.info(f"{'='*60}")
+            
+            # Generate expected video titles for all tracks
+            expected_titles = []
+            for track_info in track_audio:
+                track_info_clean = track_info.copy()
+                track_name_clean = track_info_clean.get('name', 'Unknown Track')
+                # Sanitize track name
+                import re
+                track_name_clean = re.sub(r'<[^>]+>', '', track_name_clean)
+                track_name_clean = track_name_clean.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&')
+                track_name_clean = re.sub(r'\s+', ' ', track_name_clean).strip()
+                if len(track_name_clean) > 100 or '\n' in track_name_clean:
+                    track_name_clean = track_name_clean.split('\n')[0].strip()
+                if not track_name_clean or len(track_name_clean) == 0:
+                    track_name_clean = f"Track {track_info['number']}"
+                track_info_clean['name'] = track_name_clean
+                
+                video_title = self.metadata_formatter.format_video_title(
+                    track_info_clean,
+                    metadata
+                )
+                if not video_title or not video_title.strip():
+                    video_title = f"Track {track_info['number']} - {track_name_clean}"
+                expected_titles.append(video_title)
+            
+            # Search for existing videos
+            existing_videos = self.youtube_uploader.find_existing_videos(
+                metadata.get('url', ''),
+                expected_titles
+            )
+            
+            if existing_videos:
+                logger.info(f"Found {len(existing_videos)} existing videos on YouTube")
+                for title, video_id in existing_videos.items():
+                    logger.info(f"  - {title} -> {video_id}")
+            else:
+                logger.info("No existing videos found on YouTube")
+            
+            # Step 5: Process each track
             uploaded_video_ids = []
             downloaded_audio_files = []
             created_video_files = []
@@ -145,28 +187,7 @@ class ArchiveToYouTube:
                     logger.info(f"{'='*60}")
 
                     try:
-                        # Download audio (with resume capability)
-                        logger.info(f"Downloading audio file...")
-                        # Use identifier in filename for unique identification
-                        audio_path = self.audio_downloader.download(
-                            audio_url,
-                            f"{identifier}_track_{track_num}_{audio_filename}",
-                            skip_if_exists=True
-                        )
-                        downloaded_audio_files.append(audio_path)
-
-                        # Create video (with resume capability)
-                        logger.info(f"Creating video...")
-                        video_path = self.temp_dir / f"{identifier}_video_{track_num}.mp4"
-                        self.video_creator.create_video(
-                            audio_path,
-                            image_path,
-                            video_path,
-                            skip_if_exists=True
-                        )
-                        created_video_files.append(video_path)
-
-                        # Format metadata
+                        # Format metadata first to get the video title for checking
                         # Sanitize track name before formatting (extra safety)
                         track_info_clean = track_info.copy()
                         track_name_clean = track_info_clean.get('name', 'Unknown Track')
@@ -194,6 +215,39 @@ class ArchiveToYouTube:
                             video_title = f"Track {track_num} - {track_name_clean}"
                         
                         logger.debug(f"Final video title: '{video_title}' (length: {len(video_title)})")
+                        
+                        # Check if this video already exists on YouTube
+                        video_id = existing_videos.get(video_title)
+                        
+                        if video_id:
+                            logger.info(f"Video already exists on YouTube: {video_title}")
+                            logger.info(f"  Video ID: {video_id}")
+                            logger.info(f"  URL: https://www.youtube.com/watch?v={video_id}")
+                            logger.info("Skipping download, video creation, and upload for this track")
+                            uploaded_video_ids.append(video_id)
+                            logger.info(f"✓ Successfully processed track {i} (using existing video)")
+                            continue
+                        
+                        # Download audio (with resume capability)
+                        logger.info(f"Downloading audio file...")
+                        # Use identifier in filename for unique identification
+                        audio_path = self.audio_downloader.download(
+                            audio_url,
+                            f"{identifier}_track_{track_num}_{audio_filename}",
+                            skip_if_exists=True
+                        )
+                        downloaded_audio_files.append(audio_path)
+
+                        # Create video (with resume capability)
+                        logger.info(f"Creating video...")
+                        video_path = self.temp_dir / f"{identifier}_video_{track_num}.mp4"
+                        self.video_creator.create_video(
+                            audio_path,
+                            image_path,
+                            video_path,
+                            skip_if_exists=True
+                        )
+                        created_video_files.append(video_path)
                         
                         video_description = self.metadata_formatter.format_track_description(
                             track_info_clean,
@@ -232,7 +286,7 @@ class ArchiveToYouTube:
                         logger.info("Audio and video files preserved for resume capability")
                         continue
 
-                # Step 5: Create playlist
+                # Step 6: Create playlist
                 if uploaded_video_ids:
                     logger.info(f"\n{'='*60}")
                     logger.info("Creating YouTube playlist...")

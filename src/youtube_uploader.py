@@ -272,6 +272,79 @@ class YouTubeUploader:
             logger.error(f"Error uploading video: {e}")
             raise
 
+    def find_existing_videos(self, archive_url: str, expected_titles: List[str]) -> Dict[str, str]:
+        """
+        Search for existing videos on YouTube that match the archive.org URL.
+        
+        Args:
+            archive_url: The archive.org URL to search for in video descriptions
+            expected_titles: List of expected video titles to match against
+            
+        Returns:
+            Dictionary mapping video titles to video IDs for videos that were found
+        """
+        logger.info(f"Searching for existing videos with archive.org URL: {archive_url}")
+        
+        found_videos = {}
+        
+        try:
+            # Search for videos containing the archive.org URL in the description
+            # We'll search by the archive.org identifier (the part after /details/)
+            identifier = archive_url.split('/details/')[-1].split('/')[0] if '/details/' in archive_url else ''
+            
+            if not identifier:
+                logger.warning("Could not extract identifier from archive.org URL")
+                return found_videos
+            
+            # Search for videos - we'll search by the identifier in the description
+            # YouTube search API searches in title, description, and tags
+            search_query = identifier
+            
+            logger.info(f"Searching YouTube for videos containing: {search_query}")
+            
+            # Search for videos owned by the authenticated user
+            search_response = self.youtube.search().list(
+                q=search_query,
+                part='id,snippet',
+                type='video',
+                maxResults=50,  # Should be enough for most albums
+                forMine=True  # Only search our own videos
+            ).execute()
+            
+            # Match found videos to expected titles
+            for item in search_response.get('items', []):
+                video_id = item['id']['videoId']
+                video_title = item['snippet']['title']
+                video_description = item['snippet'].get('description', '')
+                
+                # Check if this video's description contains the archive.org URL
+                if archive_url in video_description or identifier in video_description:
+                    # Try to match by title (fuzzy match - check if expected title is in video title or vice versa)
+                    for expected_title in expected_titles:
+                        # Normalize titles for comparison (remove extra spaces, case insensitive)
+                        normalized_expected = ' '.join(expected_title.lower().split())
+                        normalized_video = ' '.join(video_title.lower().split())
+                        
+                        # Check if titles match (either exact match or one contains the other)
+                        if (normalized_expected == normalized_video or 
+                            normalized_expected in normalized_video or 
+                            normalized_video in normalized_expected):
+                            found_videos[expected_title] = video_id
+                            logger.info(f"Found existing video: '{video_title}' -> {video_id}")
+                            break
+            
+            logger.info(f"Found {len(found_videos)} existing videos out of {len(expected_titles)} expected")
+            return found_videos
+            
+        except HttpError as e:
+            logger.warning(f"Error searching for existing videos: {e}")
+            logger.warning("Will proceed with uploading (may create duplicates)")
+            return found_videos
+        except Exception as e:
+            logger.warning(f"Error searching for existing videos: {e}")
+            logger.warning("Will proceed with uploading (may create duplicates)")
+            return found_videos
+
     def create_playlist(
         self,
         title: str,
