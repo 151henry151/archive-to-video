@@ -7,7 +7,7 @@ Combines audio tracks with static background images to create videos.
 import logging
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,8 @@ class VideoCreator:
         audio_path: Path,
         image_path: Path,
         output_path: Path,
-        duration: Optional[float] = None
+        duration: Optional[float] = None,
+        skip_if_exists: bool = True
     ) -> Path:
         """
         Create a video from audio and image.
@@ -61,6 +62,7 @@ class VideoCreator:
             image_path: Path to background image
             output_path: Path to save output video
             duration: Optional duration override (if None, uses audio duration)
+            skip_if_exists: If True, skip creation if video already exists (resume capability)
 
         Returns:
             Path to created video file
@@ -68,6 +70,13 @@ class VideoCreator:
         logger.info(f"Creating video from audio: {audio_path}")
         logger.info(f"Using background image: {image_path}")
         logger.info(f"Output video: {output_path}")
+
+        # Check if video already exists (resume capability)
+        if skip_if_exists and output_path.exists():
+            file_size = output_path.stat().st_size / (1024 * 1024)
+            logger.info(f"Video already exists, skipping creation: {output_path}")
+            logger.info(f"Existing video size: {file_size:.2f} MB")
+            return output_path
 
         # Get audio duration if not provided
         if duration is None:
@@ -160,6 +169,23 @@ class VideoCreator:
         except Exception as e:
             logger.warning(f"Error getting audio duration: {e}, using default")
             return 0.0
+
+    def find_existing_videos(self, identifier: str) -> List[Path]:
+        """
+        Find existing video files for a given identifier (resume capability).
+        
+        Args:
+            identifier: Archive.org identifier to search for
+            
+        Returns:
+            List of existing video file paths
+        """
+        existing_videos = []
+        pattern = f"{identifier}_video_*.mp4"
+        for filepath in self.temp_dir.glob(pattern):
+            if filepath.is_file():
+                existing_videos.append(filepath)
+        return sorted(existing_videos)
 
     def cleanup(self, filepath: Path) -> None:
         """

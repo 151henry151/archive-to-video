@@ -184,12 +184,15 @@ This will:
 
 The tool includes automatic resume capability:
 
-- **Existing files are detected**: If you run the tool again with the same archive.org URL, it will detect existing audio file downloads and skip re-downloading them
-- **Files preserved on failure**: If the process is interrupted (e.g., network error, YouTube API issue), audio files are preserved for resume
-- **Cleanup after upload**: Audio files are only deleted after successful YouTube upload, not after video creation
+- **Existing files are detected**: If you run the tool again with the same archive.org URL, it will detect existing audio and video files and skip re-downloading/re-creating them
+- **Files preserved on failure**: If the process is interrupted (e.g., network error, YouTube API issue), both audio and video files are preserved for resume
+- **Cleanup after upload**: Files are only deleted after successful YouTube upload:
+  - Audio files: preserved until successful upload (not deleted after video creation)
+  - Video files: preserved until successful upload (not deleted after creation)
 - **Identifier-based naming**: Files are named with the archive.org identifier, so each collection's files are uniquely identified
+- **Skip redundant work**: If a video has already been created but upload failed, it will be reused instead of recreating it
 
-This means you can safely interrupt the process and resume later without losing downloaded files.
+This means you can safely interrupt the process and resume later without losing downloaded files or having to re-encode videos.
 
 ## Troubleshooting
 

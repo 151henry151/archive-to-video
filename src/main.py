@@ -96,12 +96,21 @@ class ArchiveToYouTube:
             logger.info(f"Using identifier '{identifier}' for file naming (resume capability enabled)")
             
             # Check for existing files (resume capability)
-            existing_files = self.audio_downloader.find_existing_files(identifier)
-            if existing_files:
-                logger.info(f"Found {len(existing_files)} existing audio file(s) for this identifier - will resume from existing downloads")
-                for existing_file in existing_files:
-                    file_size = existing_file.stat().st_size / (1024 * 1024)
-                    logger.info(f"  - {existing_file.name} ({file_size:.2f} MB)")
+            existing_audio = self.audio_downloader.find_existing_files(identifier)
+            existing_videos = self.video_creator.find_existing_videos(identifier)
+            
+            if existing_audio or existing_videos:
+                logger.info(f"Found existing files for this identifier - will resume from existing downloads:")
+                if existing_audio:
+                    logger.info(f"  {len(existing_audio)} audio file(s):")
+                    for existing_file in existing_audio:
+                        file_size = existing_file.stat().st_size / (1024 * 1024)
+                        logger.info(f"    - {existing_file.name} ({file_size:.2f} MB)")
+                if existing_videos:
+                    logger.info(f"  {len(existing_videos)} video file(s):")
+                    for existing_file in existing_videos:
+                        file_size = existing_file.stat().st_size / (1024 * 1024)
+                        logger.info(f"    - {existing_file.name} ({file_size:.2f} MB)")
 
             # Step 3: Download background image
             logger.info("Step 3: Downloading background image...")
@@ -121,6 +130,7 @@ class ArchiveToYouTube:
             downloaded_audio_files = []
             created_video_files = []
             successfully_uploaded_audio = []  # Track which audio files were successfully uploaded
+            successfully_uploaded_videos = []  # Track which videos were successfully uploaded
 
             try:
                 for i, track_info in enumerate(track_audio, 1):
@@ -144,13 +154,14 @@ class ArchiveToYouTube:
                         )
                         downloaded_audio_files.append(audio_path)
 
-                        # Create video
+                        # Create video (with resume capability)
                         logger.info(f"Creating video...")
                         video_path = self.temp_dir / f"{identifier}_video_{track_num}.mp4"
                         self.video_creator.create_video(
                             audio_path,
                             image_path,
-                            video_path
+                            video_path,
+                            skip_if_exists=True
                         )
                         created_video_files.append(video_path)
 
@@ -180,11 +191,12 @@ class ArchiveToYouTube:
                         self.audio_downloader.cleanup(audio_path)
                         successfully_uploaded_audio.append(audio_path)  # Track for final cleanup
                         self.video_creator.cleanup(video_path)
+                        successfully_uploaded_videos.append(video_path)  # Track for final cleanup
 
                     except Exception as e:
                         logger.error(f"Failed to process track {i}: {e}")
                         logger.error("Continuing with next track...")
-                        logger.info("Audio file preserved for resume capability")
+                        logger.info("Audio and video files preserved for resume capability")
                         continue
 
                 # Step 5: Create playlist
@@ -221,23 +233,30 @@ class ArchiveToYouTube:
                 # Clean up background image (always safe to remove)
                 self.audio_downloader.cleanup(image_path)
                 
-                # Only cleanup audio files that were successfully uploaded
+                # Only cleanup files that were successfully uploaded
                 # Leave others for resume capability
                 for audio_file in successfully_uploaded_audio:
                     if audio_file.exists():
                         self.audio_downloader.cleanup(audio_file)
                 
-                # Clean up any remaining video files (they can be regenerated)
-                for video_file in created_video_files:
+                for video_file in successfully_uploaded_videos:
                     if video_file.exists():
                         self.video_creator.cleanup(video_file)
                 
                 # Log which files were preserved for resume
                 remaining_audio = [f for f in downloaded_audio_files if f not in successfully_uploaded_audio and f.exists()]
-                if remaining_audio:
-                    logger.info(f"Preserved {len(remaining_audio)} audio file(s) for resume capability:")
-                    for audio_file in remaining_audio:
-                        logger.info(f"  - {audio_file.name}")
+                remaining_videos = [f for f in created_video_files if f not in successfully_uploaded_videos and f.exists()]
+                
+                if remaining_audio or remaining_videos:
+                    logger.info(f"Preserved files for resume capability:")
+                    if remaining_audio:
+                        logger.info(f"  {len(remaining_audio)} audio file(s):")
+                        for audio_file in remaining_audio:
+                            logger.info(f"    - {audio_file.name}")
+                    if remaining_videos:
+                        logger.info(f"  {len(remaining_videos)} video file(s):")
+                        for video_file in remaining_videos:
+                            logger.info(f"    - {video_file.name}")
 
         except Exception as e:
             logger.error(f"Error processing archive.org URL: {e}")

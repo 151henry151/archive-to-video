@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1-beta] - 2026-01-30
+
+### Added
+- Video file resume capability: existing videos are detected and reused instead of recreating
+- `find_existing_videos()` method to check for existing video files before starting
+- Video files are preserved until successful YouTube upload (not deleted after creation)
+
+### Changed
+- Video creation now accepts `skip_if_exists` parameter (default: True)
+- Video files are only deleted after successful YouTube upload, not after creation
+- Resume check now shows both audio and video files that will be reused
+
+### Fixed
+- Video files are preserved if YouTube upload fails, allowing resume without re-encoding
+- Improved resume capability to avoid redundant ffmpeg video creation work
+
 ## [0.3.0-beta] - 2026-01-29
 
 ### Added
@@ -57,7 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic cleanup of temporary files
 - Full documentation (README.md, ARCHITECTURE.md)
 
-[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.3.0-beta...HEAD
+[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.3.1-beta...HEAD
+[0.3.1-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.3.0-beta...v0.3.1-beta
 [0.3.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.2.0-beta...v0.3.0-beta
 [0.2.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.1.0-beta...v0.2.0-beta
 [0.1.0-beta]: https://github.com/151henry151/archive-to-yt/tag/v0.1.0-beta

@@ -92,7 +92,8 @@ The Archive.org to YouTube uploader is a Python application that automates the c
 **Purpose**: Create MP4 videos by combining audio tracks with static background images.
 
 **Key Methods**:
-- `create_video()`: Main video creation method
+- `create_video()`: Main video creation method with resume capability
+- `find_existing_videos()`: Find existing video files for a given identifier
 - `_get_audio_duration()`: Get audio length using ffprobe
 
 **FFmpeg Configuration**:
@@ -208,9 +209,9 @@ The Archive.org to YouTube uploader is a Python application that automates the c
 
 ### Cleanup Strategy
 - Audio files: Deleted only after successful YouTube upload (preserved for resume if upload fails)
-- Video files: Deleted immediately after YouTube upload
+- Video files: Deleted only after successful YouTube upload (preserved for resume if upload fails)
 - Background image: Deleted after all tracks processed
-- Failed uploads: Audio files are preserved to allow resume without re-downloading
+- Failed uploads: Both audio and video files are preserved to allow resume without re-downloading or re-encoding
 - All cleanup happens automatically, even on errors
 
 ## Logging
