@@ -259,6 +259,12 @@ class MetadataFormatter:
         text = text.replace('&nbsp;', ' ').replace('&quot;', '"').replace('&#39;', "'")
         text = text.replace('&apos;', "'")
         
+        # Replace or remove characters that YouTube may reject in descriptions
+        # Square brackets can cause issues in some contexts
+        text = text.replace('[', '(').replace(']', ')')
+        # Replace angle brackets with text equivalents to be safe
+        text = text.replace('>', ' to ').replace('<', ' from ')
+        
         # Remove null bytes and other control characters (except newline, tab, carriage return)
         # YouTube doesn't allow most control characters
         text = ''.join(char for char in text if unicodedata.category(char)[0] != 'C' or char in '\n\t\r')
