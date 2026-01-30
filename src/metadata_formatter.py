@@ -27,18 +27,19 @@ class MetadataFormatter:
         """
         parts = []
 
-        # Track name
-        track_name = track.get('name', 'Unknown Track')
-        parts.append(track_name)
+        # Track name - ensure it's a valid string
+        track_name = str(track.get('name', 'Unknown Track')).strip()
+        if track_name:
+            parts.append(track_name)
 
         # Artist/Band
-        artist = metadata.get('artist', '')
+        artist = str(metadata.get('artist', '')).strip()
         if artist:
             parts.append(f"performed by {artist}")
 
         # Venue and location
-        venue = metadata.get('venue', '')
-        location = metadata.get('location', '')
+        venue = str(metadata.get('venue', '')).strip()
+        location = str(metadata.get('location', '')).strip()
         if venue or location:
             venue_info = venue
             if location and location not in venue:
@@ -50,7 +51,7 @@ class MetadataFormatter:
                 parts.append(f"at {venue_info}")
 
         # Date
-        date = metadata.get('date', '')
+        date = str(metadata.get('date', '')).strip()
         if date:
             # Format date nicely (YYYY-MM-DD -> MM/DD/YYYY)
             try:
@@ -61,8 +62,8 @@ class MetadataFormatter:
                 parts.append(f"on {date}")
 
         # Credits
-        taped_by = metadata.get('taped_by', '')
-        transferred_by = metadata.get('transferred_by', '')
+        taped_by = str(metadata.get('taped_by', '')).strip()
+        transferred_by = str(metadata.get('transferred_by', '')).strip()
 
         credits = []
         if taped_by:
@@ -74,15 +75,22 @@ class MetadataFormatter:
             parts.append(". ".join(credits) + ".")
 
         # Lineage
-        lineage = metadata.get('lineage', '')
+        lineage = str(metadata.get('lineage', '')).strip()
         if lineage:
             parts.append(f"Lineage: {lineage}")
 
         # Link back to original
-        original_url = metadata.get('url', '')
+        original_url = str(metadata.get('url', '')).strip()
         if original_url:
             parts.append(f"\nOriginal source: {original_url}")
 
+        # Filter out any empty parts before joining
+        parts = [p for p in parts if p and p.strip()]
+        
+        # Ensure we have at least one part
+        if not parts:
+            parts = ["Music track from archive.org"]
+        
         description = ". ".join(parts)
         # Clean up any double periods or spacing issues
         description = description.replace("..", ".").replace(" .", ".")
@@ -236,6 +244,8 @@ class MetadataFormatter:
             Cleaned description text
         """
         import re
+        import unicodedata
+        
         if not text:
             return ''
         
@@ -249,9 +259,28 @@ class MetadataFormatter:
         text = text.replace('&nbsp;', ' ').replace('&quot;', '"').replace('&#39;', "'")
         text = text.replace('&apos;', "'")
         
+        # Remove null bytes and other control characters (except newline, tab, carriage return)
+        # YouTube doesn't allow most control characters
+        text = ''.join(char for char in text if unicodedata.category(char)[0] != 'C' or char in '\n\t\r')
+        
+        # Normalize Unicode (NFKC normalization)
+        try:
+            text = unicodedata.normalize('NFKC', text)
+        except (UnicodeError, TypeError):
+            # If normalization fails, try to encode/decode to fix encoding issues
+            try:
+                text = text.encode('utf-8', errors='ignore').decode('utf-8')
+            except (UnicodeError, TypeError):
+                # Last resort: remove non-ASCII characters
+                text = text.encode('ascii', errors='ignore').decode('ascii')
+        
         # Clean up extra whitespace but preserve line breaks
         text = re.sub(r'[ \t]+', ' ', text)  # Multiple spaces/tabs to single space
         text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)  # Multiple blank lines to double
+        
+        # Remove any remaining problematic characters
+        # Remove zero-width characters
+        text = re.sub(r'[\u200b-\u200d\ufeff]', '', text)  # Zero-width space, joiner, non-joiner, BOM
         
         # YouTube description limit is 5000 characters
         if len(text) > 5000:

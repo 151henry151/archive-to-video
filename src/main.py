@@ -198,6 +198,14 @@ class ArchiveToYouTube:
                             track_info_clean,
                             metadata
                         )
+                        
+                        # Final validation of description
+                        if not video_description or not video_description.strip():
+                            logger.warning(f"Generated empty description for track {track_num}, using fallback")
+                            video_description = f"Track {track_num}: {track_name_clean}"
+                        
+                        logger.debug(f"Final video description length: {len(video_description)}")
+                        logger.debug(f"Final video description preview: {video_description[:200]}..." if len(video_description) > 200 else f"Final video description: '{video_description}'")
 
                         # Upload to YouTube
                         logger.info(f"Uploading to YouTube...")

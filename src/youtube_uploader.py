@@ -131,14 +131,38 @@ class YouTubeUploader:
         # Validate and sanitize description
         if description is None:
             description = ''
-        description = str(description).strip()
+        
+        # Ensure it's a string and handle encoding issues
+        try:
+            description = str(description)
+        except (UnicodeError, TypeError):
+            description = ''
+        
+        # Remove any null bytes or control characters that might cause issues
+        import unicodedata
+        description = ''.join(char for char in description if unicodedata.category(char)[0] != 'C' or char in '\n\t\r')
+        
+        description = description.strip()
         
         # YouTube description requirements:
         # - Must be a string (can be empty)
         # - Maximum 5000 characters
+        # - Must be valid UTF-8
         if len(description) > 5000:
             description = description[:4997] + '...'
             logger.warning(f"Description truncated to 5000 characters")
+        
+        # Final validation: ensure it's valid UTF-8
+        try:
+            description.encode('utf-8')
+        except UnicodeEncodeError:
+            logger.error("Description contains invalid UTF-8 characters, using fallback")
+            description = "Music track from archive.org"
+        
+        # Ensure description is not empty (YouTube requires at least something, even if minimal)
+        if not description or len(description.strip()) == 0:
+            logger.warning("Description is empty, using fallback")
+            description = "Music track from archive.org"
         
         body = {
             'snippet': {
@@ -157,7 +181,13 @@ class YouTubeUploader:
         logger.debug(f"Request body title type: {type(body['snippet']['title'])}")
         logger.debug(f"Request body title length: {len(body['snippet']['title']) if body['snippet']['title'] else 0}")
         logger.debug(f"Request body description length: {len(body['snippet']['description'])}")
+        logger.debug(f"Request body description type: {type(body['snippet']['description'])}")
         logger.debug(f"Request body description preview: {body['snippet']['description'][:100]}..." if len(body['snippet']['description']) > 100 else f"Request body description: '{body['snippet']['description']}'")
+        
+        # Additional validation: check if description is actually a string in the body
+        if not isinstance(body['snippet']['description'], str):
+            logger.error(f"Description is not a string! Type: {type(body['snippet']['description'])}, Value: {body['snippet']['description']}")
+            body['snippet']['description'] = str(body['snippet']['description']) if body['snippet']['description'] else "Music track from archive.org"
 
         try:
             # Create media upload object
