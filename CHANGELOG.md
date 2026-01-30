@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-beta] - 2026-01-29
+
+### Added
+- Resume capability: automatically detects and reuses existing audio file downloads
+- Identifier-based file naming: files are named with archive.org identifier for unique identification
+- Deferred cleanup: audio files are only deleted after successful YouTube upload (not after video creation)
+- Progress preservation: if process is interrupted, audio files are preserved for resume
+- `find_existing_files()` method to check for existing downloads before starting
+
+### Changed
+- Audio files are now named with format: `{identifier}_track_{number}_{filename}`
+- Background images are now named with format: `{identifier}_background_image.jpg`
+- Video files are now named with format: `{identifier}_video_{number}.mp4`
+- Cleanup strategy: audio files only deleted after successful upload, not after video creation
+- Download method now accepts `skip_if_exists` parameter (default: True)
+
+### Fixed
+- Audio files are preserved if video creation or upload fails, allowing resume
+- Interrupted processes can now be resumed without re-downloading all files
+
 ## [0.2.0-beta] - 2026-01-29
 
 ### Changed
@@ -37,7 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic cleanup of temporary files
 - Full documentation (README.md, ARCHITECTURE.md)
 
-[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.2.0-beta...HEAD
+[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.3.0-beta...HEAD
+[0.3.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.2.0-beta...v0.3.0-beta
 [0.2.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.1.0-beta...v0.2.0-beta
 [0.1.0-beta]: https://github.com/151henry151/archive-to-yt/tag/v0.1.0-beta
 

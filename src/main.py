@@ -91,6 +91,18 @@ class ArchiveToYouTube:
 
             logger.info(f"Found {len(track_audio)} audio files")
 
+            # Get identifier for unique filenames (resume capability)
+            identifier = metadata.get('identifier', 'unknown')
+            logger.info(f"Using identifier '{identifier}' for file naming (resume capability enabled)")
+            
+            # Check for existing files (resume capability)
+            existing_files = self.audio_downloader.find_existing_files(identifier)
+            if existing_files:
+                logger.info(f"Found {len(existing_files)} existing audio file(s) for this identifier - will resume from existing downloads")
+                for existing_file in existing_files:
+                    file_size = existing_file.stat().st_size / (1024 * 1024)
+                    logger.info(f"  - {existing_file.name} ({file_size:.2f} MB)")
+
             # Step 3: Download background image
             logger.info("Step 3: Downloading background image...")
             background_image_url = metadata.get('background_image_url')
@@ -99,7 +111,8 @@ class ArchiveToYouTube:
 
             image_path = self.audio_downloader.download(
                 background_image_url,
-                "background_image.jpg"
+                f"{identifier}_background_image.jpg",
+                skip_if_exists=True
             )
             logger.info(f"Downloaded background image: {image_path}")
 
@@ -107,29 +120,33 @@ class ArchiveToYouTube:
             uploaded_video_ids = []
             downloaded_audio_files = []
             created_video_files = []
+            successfully_uploaded_audio = []  # Track which audio files were successfully uploaded
 
             try:
                 for i, track_info in enumerate(track_audio, 1):
                     track_num = track_info['number']
                     track_name = track_info['name']
                     audio_url = track_info['url']
+                    audio_filename = track_info.get('filename', 'audio')
 
                     logger.info(f"\n{'='*60}")
                     logger.info(f"Processing track {i}/{len(track_audio)}: {track_num}. {track_name}")
                     logger.info(f"{'='*60}")
 
                     try:
-                        # Download audio
+                        # Download audio (with resume capability)
                         logger.info(f"Downloading audio file...")
+                        # Use identifier in filename for unique identification
                         audio_path = self.audio_downloader.download(
                             audio_url,
-                            f"track_{track_num}_{track_info.get('filename', 'audio')}"
+                            f"{identifier}_track_{track_num}_{audio_filename}",
+                            skip_if_exists=True
                         )
                         downloaded_audio_files.append(audio_path)
 
                         # Create video
                         logger.info(f"Creating video...")
-                        video_path = self.temp_dir / f"video_{track_num}.mp4"
+                        video_path = self.temp_dir / f"{identifier}_video_{track_num}.mp4"
                         self.video_creator.create_video(
                             audio_path,
                             image_path,
@@ -158,14 +175,16 @@ class ArchiveToYouTube:
 
                         logger.info(f"✓ Successfully processed track {i}")
 
-                        # Clean up audio and video files immediately after upload
+                        # Only cleanup after successful YouTube upload
                         logger.debug("Cleaning up temporary files for this track...")
                         self.audio_downloader.cleanup(audio_path)
+                        successfully_uploaded_audio.append(audio_path)  # Track for final cleanup
                         self.video_creator.cleanup(video_path)
 
                     except Exception as e:
                         logger.error(f"Failed to process track {i}: {e}")
                         logger.error("Continuing with next track...")
+                        logger.info("Audio file preserved for resume capability")
                         continue
 
                 # Step 5: Create playlist
@@ -196,16 +215,29 @@ class ArchiveToYouTube:
                     logger.error("No videos were successfully uploaded")
 
             finally:
-                # Final cleanup
+                # Final cleanup - only clean up successfully uploaded files
                 logger.info("Performing final cleanup...")
+                
+                # Clean up background image (always safe to remove)
                 self.audio_downloader.cleanup(image_path)
-                # Audio and video files should already be cleaned up, but ensure cleanup
-                for audio_file in downloaded_audio_files:
+                
+                # Only cleanup audio files that were successfully uploaded
+                # Leave others for resume capability
+                for audio_file in successfully_uploaded_audio:
                     if audio_file.exists():
                         self.audio_downloader.cleanup(audio_file)
+                
+                # Clean up any remaining video files (they can be regenerated)
                 for video_file in created_video_files:
                     if video_file.exists():
                         self.video_creator.cleanup(video_file)
+                
+                # Log which files were preserved for resume
+                remaining_audio = [f for f in downloaded_audio_files if f not in successfully_uploaded_audio and f.exists()]
+                if remaining_audio:
+                    logger.info(f"Preserved {len(remaining_audio)} audio file(s) for resume capability:")
+                    for audio_file in remaining_audio:
+                        logger.info(f"  - {audio_file.name}")
 
         except Exception as e:
             logger.error(f"Error processing archive.org URL: {e}")

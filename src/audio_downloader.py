@@ -7,7 +7,7 @@ Handles downloading audio files for processing.
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from urllib.parse import urlparse
 
 import requests
@@ -29,13 +29,14 @@ class AudioDownloader:
         self.temp_dir.mkdir(exist_ok=True)
         logger.info(f"Audio downloader initialized with temp directory: {self.temp_dir}")
 
-    def download(self, url: str, filename: Optional[str] = None) -> Path:
+    def download(self, url: str, filename: Optional[str] = None, skip_if_exists: bool = True) -> Path:
         """
         Download an audio file from URL.
 
         Args:
             url: URL of the audio file to download
             filename: Optional filename to save as (defaults to URL filename)
+            skip_if_exists: If True, skip download if file already exists (resume capability)
 
         Returns:
             Path to the downloaded file
@@ -59,6 +60,13 @@ class AudioDownloader:
 
         # Ensure parent directory exists (should already exist, but be safe)
         filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        # Check if file already exists (resume capability)
+        if skip_if_exists and filepath.exists():
+            file_size = filepath.stat().st_size
+            logger.info(f"File already exists, skipping download: {filepath}")
+            logger.info(f"Existing file size: {file_size / (1024 * 1024):.2f} MB")
+            return filepath
 
         logger.info(f"Downloading audio file: {url}")
         logger.info(f"Saving to: {filepath}")
@@ -107,6 +115,23 @@ class AudioDownloader:
                 logger.debug(f"Cleaned up audio file: {filepath}")
         except Exception as e:
             logger.warning(f"Failed to cleanup audio file {filepath}: {e}")
+
+    def find_existing_files(self, identifier: str) -> List[Path]:
+        """
+        Find existing audio files for a given identifier (resume capability).
+        
+        Args:
+            identifier: Archive.org identifier to search for
+            
+        Returns:
+            List of existing audio file paths
+        """
+        existing_files = []
+        pattern = f"{identifier}_track_*"
+        for filepath in self.temp_dir.glob(pattern):
+            if filepath.is_file():
+                existing_files.append(filepath)
+        return sorted(existing_files)
 
     def cleanup_all(self) -> None:
         """Clean up all files in temp directory."""

@@ -75,14 +75,17 @@ The Archive.org to YouTube uploader is a Python application that automates the c
 **Purpose**: Download audio files and images from archive.org.
 
 **Key Methods**:
-- `download()`: Download file with progress logging
+- `download()`: Download file with progress logging and resume capability
+- `find_existing_files()`: Find existing downloads for a given identifier
 - `cleanup()`: Remove temporary files
 
 **Features**:
 - Streaming downloads for large files
+- Resume capability: skips download if file already exists
 - Progress logging
-- Automatic cleanup
+- Deferred cleanup (only after successful upload)
 - Error handling with partial file cleanup
+- Identifier-based file naming for unique identification
 
 ### 3. VideoCreator (`src/video_creator.py`)
 
@@ -195,13 +198,19 @@ The Archive.org to YouTube uploader is a Python application that automates the c
 ### Temporary Files
 - Stored in `temp/` directory (configurable)
 - Audio files: Downloaded from archive.org
+  - Named with format: `{identifier}_track_{number}_{filename}`
+  - Preserved until successful YouTube upload
 - Video files: Created by ffmpeg
+  - Named with format: `{identifier}_video_{number}.mp4`
+  - Deleted after successful upload
 - Background image: Downloaded once, reused for all tracks
+  - Named with format: `{identifier}_background_image.jpg`
 
 ### Cleanup Strategy
-- Audio files: Deleted immediately after video creation
+- Audio files: Deleted only after successful YouTube upload (preserved for resume if upload fails)
 - Video files: Deleted immediately after YouTube upload
 - Background image: Deleted after all tracks processed
+- Failed uploads: Audio files are preserved to allow resume without re-downloading
 - All cleanup happens automatically, even on errors
 
 ## Logging

@@ -153,6 +153,9 @@ This will:
    - Audio file URLs (directly from API file list)
 
 2. **Audio Download**: Downloads each audio track from archive.org
+   - **Resume capability**: Automatically detects and reuses existing downloads
+   - Files are preserved if the process is interrupted
+   - Only deleted after successful YouTube upload
 
 3. **Video Creation**: Uses `ffmpeg` to create videos:
    - Combines audio with static background image
@@ -176,6 +179,17 @@ This will:
   - Progress for each track
   - YouTube video URLs
   - Playlist URL
+
+## Resume Capability
+
+The tool includes automatic resume capability:
+
+- **Existing files are detected**: If you run the tool again with the same archive.org URL, it will detect existing audio file downloads and skip re-downloading them
+- **Files preserved on failure**: If the process is interrupted (e.g., network error, YouTube API issue), audio files are preserved for resume
+- **Cleanup after upload**: Audio files are only deleted after successful YouTube upload, not after video creation
+- **Identifier-based naming**: Files are named with the archive.org identifier, so each collection's files are uniquely identified
+
+This means you can safely interrupt the process and resume later without losing downloaded files.
 
 ## Troubleshooting
 
