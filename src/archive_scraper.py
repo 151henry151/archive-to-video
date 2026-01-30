@@ -111,17 +111,35 @@ class ArchiveScraper:
         # Extract background image
         background_image_url = self._extract_background_image(files)
 
+        # Extract performer/band name (who performed, not who recorded)
+        performer = self._extract_performer(api_metadata, description)
+        
+        # Extract recorder (who recorded/taped it)
+        recorder = (
+            self._safe_get_string(api_metadata, 'creator') or
+            self._safe_get_string(api_metadata, 'taper') or
+            self._safe_get_string(api_metadata, 'tapedby') or
+            self._safe_get_string(api_metadata, 'taped_by') or
+            ''
+        )
+        
+        # Clean venue - remove [Romp] or similar prefixes
+        venue_raw = self._safe_get_string(api_metadata, 'venue')
+        venue = self._clean_venue(venue_raw)
+        
         metadata = {
             'identifier': self.identifier,
             'url': self.url,
             'title': self._safe_get_string(api_metadata, 'title'),
-            'artist': self._extract_artist(api_metadata),
-            'venue': self._safe_get_string(api_metadata, 'venue'),
+            'performer': performer,  # Who performed (band/artist)
+            'recorder': recorder,  # Who recorded it
+            'artist': performer,  # Keep for backwards compatibility
+            'venue': venue,
             'location': self._safe_get_string(api_metadata, 'location'),
             'date': self._safe_get_string(api_metadata, 'date'),
             'year': self._safe_get_string(api_metadata, 'year'),
-            'taped_by': self._safe_get_string(api_metadata, 'tapedby') or self._safe_get_string(api_metadata, 'taped_by'),
-            'transferred_by': self._safe_get_string(api_metadata, 'transferredby') or self._safe_get_string(api_metadata, 'transferred_by'),
+            'taped_by': self._safe_get_string(api_metadata, 'taper') or self._safe_get_string(api_metadata, 'tapedby') or self._safe_get_string(api_metadata, 'taped_by'),
+            'transferred_by': self._safe_get_string(api_metadata, 'transferer') or self._safe_get_string(api_metadata, 'transferredby') or self._safe_get_string(api_metadata, 'transferred_by'),
             'lineage': self._safe_get_string(api_metadata, 'lineage'),
             'topics': self._extract_topics(api_metadata),
             'collection': self._safe_get_string(api_metadata, 'collection'),
@@ -134,25 +152,77 @@ class ArchiveScraper:
         logger.info(f"Extracted metadata: {len(tracks)} tracks found")
         return metadata
 
-    def _extract_artist(self, api_metadata: Dict) -> str:
-        """Extract artist/band name from metadata."""
-        # Try various field names
-        artist = (
-            self._safe_get_string(api_metadata, 'band') or
-            self._safe_get_string(api_metadata, 'artist') or
-            self._safe_get_string(api_metadata, 'creator') or
-            self._safe_get_string(api_metadata, 'band/artist') or
-            ''
-        )
+    def _extract_performer(self, api_metadata: Dict, description: str = '') -> str:
+        """
+        Extract performer/band name (who performed, not who recorded).
         
-        # If artist is in title (format: "Title by Artist"), extract it
-        if not artist:
-            title = self._safe_get_string(api_metadata, 'title')
-            match = re.search(r'by\s+(.+?)(?:\s*$|\s*Publication)', title, re.IGNORECASE)
+        Tries to find the actual performer/band name, which may be:
+        - In the description (first line often has the band name)
+        - In the venue field (e.g., "[Romp] Fox Hollow Restaurant")
+        - In a 'band' or 'artist' field
+        """
+        # Try 'band' field first (most specific)
+        performer = self._safe_get_string(api_metadata, 'band')
+        if performer:
+            return performer
+        
+        # Try to extract from description (first line often has band name)
+        if description:
+            # Get first line of description (before first <br> or newline)
+            first_line = re.split(r'<br\s*/?>|\n', description, 1)[0].strip()
+            # Remove HTML tags
+            first_line = re.sub(r'<[^>]+>', '', first_line).strip()
+            if first_line and len(first_line) < 100:  # Reasonable band name length
+                return first_line
+        
+        # Try to extract from venue field (e.g., "[Romp] Fox Hollow Restaurant")
+        venue = self._safe_get_string(api_metadata, 'venue')
+        if venue:
+            # Look for [BandName] pattern
+            match = re.search(r'\[([^\]]+)\]', venue)
             if match:
-                artist = match.group(1).strip()
+                return match.group(1).strip()
         
-        return artist
+        # Try 'artist' field (but not 'creator' which is usually the recorder)
+        performer = self._safe_get_string(api_metadata, 'artist')
+        if performer:
+            return performer
+        
+        # Last resort: try to extract from title
+        title = self._safe_get_string(api_metadata, 'title')
+        if title:
+            # Look for patterns like "Band Live at..." or "...by Band"
+            match = re.search(r'^([^L]+?)\s+Live\s+at', title, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+            match = re.search(r'by\s+(.+?)(?:\s*$|\s*Live|\s*Publication)', title, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        
+        return ''
+    
+    def _clean_venue(self, venue: str) -> str:
+        """
+        Clean venue name by removing band name prefixes like [Romp].
+        
+        Args:
+            venue: Raw venue string (e.g., "[Romp] Fox Hollow Restaurant")
+            
+        Returns:
+            Cleaned venue string (e.g., "Fox Hollow Restaurant")
+        """
+        if not venue:
+            return ''
+        
+        # Remove [BandName] prefix
+        venue = re.sub(r'^\[[^\]]+\]\s*', '', venue)
+        
+        return venue.strip()
+    
+    def _extract_artist(self, api_metadata: Dict) -> str:
+        """Extract artist/band name from metadata (backwards compatibility)."""
+        # This now just calls _extract_performer for consistency
+        return self._extract_performer(api_metadata, '')
 
     def _extract_topics(self, api_metadata: Dict) -> List[str]:
         """Extract topics from metadata."""

@@ -32,10 +32,10 @@ class MetadataFormatter:
         if track_name:
             parts.append(track_name)
 
-        # Artist/Band
-        artist = str(metadata.get('artist', '')).strip()
-        if artist:
-            parts.append(f"performed by {artist}")
+        # Performer/Band (who performed the music)
+        performer = str(metadata.get('performer', '') or metadata.get('artist', '')).strip()
+        if performer:
+            parts.append(f"performed by {performer}")
 
         # Venue and location
         venue = str(metadata.get('venue', '')).strip()
@@ -61,12 +61,16 @@ class MetadataFormatter:
             except ValueError:
                 parts.append(f"on {date}")
 
-        # Credits
+        # Recording credits (who recorded/produced it)
+        recorder = str(metadata.get('recorder', '')).strip()
         taped_by = str(metadata.get('taped_by', '')).strip()
         transferred_by = str(metadata.get('transferred_by', '')).strip()
 
         credits = []
-        if taped_by:
+        # Use 'recorder' if available, otherwise fall back to 'taped_by'
+        if recorder:
+            credits.append(f"Recorded by {recorder}")
+        elif taped_by:
             credits.append(f"Taped by {taped_by}")
         if transferred_by:
             credits.append(f"Transferred by {transferred_by}")
