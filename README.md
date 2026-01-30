@@ -138,10 +138,12 @@ python upload.py https://archive.org/details/lf2007-11-21.a
 
 This will:
 1. Extract metadata and track information
-2. Download all audio tracks
-3. Create videos with the background image
-4. Upload each video to YouTube
-5. Create a playlist with all tracks
+2. Check for existing videos on YouTube (prevents duplicates)
+3. Download audio tracks (only for videos that don't exist)
+4. Create videos with the background image (only for videos that don't exist)
+5. Upload each video to YouTube (only videos that don't already exist)
+6. Create a playlist with all tracks
+7. Offer to make videos and playlist public after review
 
 ## How It Works
 
@@ -165,18 +167,27 @@ This will:
 4. **YouTube Upload**: Uploads each video with:
    - Formatted title (track name, artist, date)
    - Detailed description (venue, credits, original link)
-   - Private visibility (you can change this in YouTube Studio)
+   - Private visibility by default
+   - **Duplicate detection**: Checks for existing videos before uploading
 
 5. **Playlist Creation**: Creates a YouTube playlist with:
-   - All uploaded videos in order
+   - All uploaded videos in order (including existing videos)
    - Full metadata description
+   - Private visibility by default
+
+6. **Interactive Publish**: After upload completes:
+   - Script provides a link to review the playlist
+   - Optionally make all videos and playlist public
+   - Confirmation with public playlist link
 
 ## Output
 
 - Videos are uploaded to your YouTube channel (set to **private** by default)
-- A playlist is created containing all tracks
+- A playlist is created containing all tracks (also **private** by default)
 - The tool outputs:
   - Progress for each track
+  - Link to review the playlist
+  - Option to make videos and playlist public
   - YouTube video URLs
   - Playlist URL
 

@@ -419,3 +419,97 @@ class YouTubeUploader:
             logger.error(f"Error creating playlist: {e}")
             raise
 
+    def update_video_privacy(self, video_id: str, privacy_status: str = 'public') -> bool:
+        """
+        Update the privacy status of a video.
+        
+        Args:
+            video_id: YouTube video ID
+            privacy_status: Privacy status (private, unlisted, public)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self.youtube.videos().update(
+                part='status',
+                body={
+                    'id': video_id,
+                    'status': {
+                        'privacyStatus': privacy_status
+                    }
+                }
+            ).execute()
+            logger.info(f"Updated video {video_id} to {privacy_status}")
+            return True
+        except HttpError as e:
+            logger.error(f"Failed to update video {video_id} privacy: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Error updating video {video_id} privacy: {e}")
+            return False
+
+    def update_playlist_privacy(self, playlist_id: str, privacy_status: str = 'public') -> bool:
+        """
+        Update the privacy status of a playlist.
+        
+        Args:
+            playlist_id: YouTube playlist ID
+            privacy_status: Privacy status (private, unlisted, public)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # First get the current playlist to preserve other fields
+            playlist_response = self.youtube.playlists().list(
+                part='snippet,status',
+                id=playlist_id
+            ).execute()
+            
+            if not playlist_response.get('items'):
+                logger.error(f"Playlist {playlist_id} not found")
+                return False
+            
+            playlist = playlist_response['items'][0]
+            
+            # Update privacy status
+            self.youtube.playlists().update(
+                part='status',
+                body={
+                    'id': playlist_id,
+                    'status': {
+                        'privacyStatus': privacy_status
+                    }
+                }
+            ).execute()
+            logger.info(f"Updated playlist {playlist_id} to {privacy_status}")
+            return True
+        except HttpError as e:
+            logger.error(f"Failed to update playlist {playlist_id} privacy: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Error updating playlist {playlist_id} privacy: {e}")
+            return False
+
+    def make_videos_public(self, video_ids: List[str]) -> int:
+        """
+        Make multiple videos public.
+        
+        Args:
+            video_ids: List of YouTube video IDs
+            
+        Returns:
+            Number of videos successfully made public
+        """
+        logger.info(f"Making {len(video_ids)} videos public...")
+        success_count = 0
+        
+        for i, video_id in enumerate(video_ids, 1):
+            logger.info(f"Updating video {i}/{len(video_ids)} to public...")
+            if self.update_video_privacy(video_id, 'public'):
+                success_count += 1
+        
+        logger.info(f"Successfully made {success_count}/{len(video_ids)} videos public")
+        return success_count
+

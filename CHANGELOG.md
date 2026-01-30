@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-beta] - 2026-01-30
+
+### Added
+- Interactive publish workflow: after upload, script offers to make videos and playlist public
+- `update_video_privacy()` method to change video privacy status (private/unlisted/public)
+- `update_playlist_privacy()` method to change playlist privacy status
+- `make_videos_public()` method to batch update multiple videos to public
+- Automatic check for existing YouTube videos before uploading (prevents duplicates)
+- `find_existing_videos()` method to search YouTube for videos with matching archive.org URL
+- Script now skips download/video creation/upload if video already exists on YouTube
+
+### Changed
+- Videos and playlists are created as private by default
+- After successful upload, script prompts user to review playlist and optionally make it public
+- Improved workflow: check for existing videos before processing tracks
+
+### Fixed
+- Fixed YouTube playlist creation permissions by adding `youtube` scope in addition to `youtube.upload`
+- Fixed performer vs recorder in descriptions (now correctly shows "performed by [Band]" and "Recorded by [Recorder]")
+- Fixed venue cleaning to remove band name prefixes like [Romp]
+- Fixed background image validation false alarm (images no longer validated as audio files)
+
 ## [0.3.1-beta] - 2026-01-30
 
 ### Added

@@ -304,12 +304,52 @@ class ArchiveToYouTube:
                         uploaded_video_ids
                     )
 
+                    playlist_url = f"https://www.youtube.com/playlist?list={playlist_id}"
+                    
                     logger.info(f"\n{'='*60}")
                     logger.info("SUCCESS!")
                     logger.info(f"{'='*60}")
                     logger.info(f"Uploaded {len(uploaded_video_ids)} videos")
-                    logger.info(f"Playlist: https://www.youtube.com/playlist?list={playlist_id}")
-                    logger.info(f"Videos are set to PRIVATE - you can change this in YouTube Studio")
+                    logger.info(f"Playlist: {playlist_url}")
+                    logger.info(f"Videos and playlist are currently set to PRIVATE")
+                    
+                    # Offer to review and make public
+                    logger.info(f"\n{'='*60}")
+                    logger.info("Review and Publish")
+                    logger.info(f"{'='*60}")
+                    logger.info(f"Please review your playlist at: {playlist_url}")
+                    logger.info("")
+                    
+                    while True:
+                        try:
+                            response = input("Would you like to make all videos and the playlist PUBLIC? (yes/no): ").strip().lower()
+                            if response in ['yes', 'y']:
+                                logger.info("Making videos and playlist public...")
+                                
+                                # Make all videos public
+                                success_count = self.youtube_uploader.make_videos_public(uploaded_video_ids)
+                                
+                                # Make playlist public
+                                if self.youtube_uploader.update_playlist_privacy(playlist_id, 'public'):
+                                    logger.info(f"\n{'='*60}")
+                                    logger.info("PUBLISHED!")
+                                    logger.info(f"{'='*60}")
+                                    logger.info(f"All {success_count} videos and the playlist are now PUBLIC")
+                                    logger.info(f"Public playlist: {playlist_url}")
+                                else:
+                                    logger.warning("Videos were made public, but playlist update failed")
+                                    logger.warning("You may need to make the playlist public manually in YouTube Studio")
+                                break
+                            elif response in ['no', 'n']:
+                                logger.info("Keeping videos and playlist as PRIVATE")
+                                logger.info("You can change privacy settings later in YouTube Studio")
+                                break
+                            else:
+                                logger.info("Please enter 'yes' or 'no'")
+                        except (EOFError, KeyboardInterrupt):
+                            logger.info("\nKeeping videos and playlist as PRIVATE")
+                            logger.info("You can change privacy settings later in YouTube Studio")
+                            break
                 else:
                     logger.error("No videos were successfully uploaded")
 
