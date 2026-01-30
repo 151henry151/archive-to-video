@@ -121,7 +121,8 @@ class ArchiveToYouTube:
             image_path = self.audio_downloader.download(
                 background_image_url,
                 f"{identifier}_background_image.jpg",
-                skip_if_exists=True
+                skip_if_exists=True,
+                validate_audio=False  # Don't validate images as audio files
             )
             logger.info(f"Downloaded background image: {image_path}")
 

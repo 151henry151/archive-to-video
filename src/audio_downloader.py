@@ -31,14 +31,15 @@ class AudioDownloader:
         self.temp_dir.mkdir(exist_ok=True)
         logger.info(f"Audio downloader initialized with temp directory: {self.temp_dir}")
 
-    def download(self, url: str, filename: Optional[str] = None, skip_if_exists: bool = True) -> Path:
+    def download(self, url: str, filename: Optional[str] = None, skip_if_exists: bool = True, validate_audio: bool = True) -> Path:
         """
-        Download an audio file from URL.
+        Download a file from URL.
 
         Args:
-            url: URL of the audio file to download
+            url: URL of the file to download
             filename: Optional filename to save as (defaults to URL filename)
             skip_if_exists: If True, skip download if file already exists (resume capability)
+            validate_audio: If True, validate the downloaded file as an audio file (default: True)
 
         Returns:
             Path to the downloaded file
@@ -68,19 +69,24 @@ class AudioDownloader:
             file_size = filepath.stat().st_size
             logger.info(f"Audio file exists: {filepath} ({file_size / (1024 * 1024):.2f} MB)")
             
-            # Validate the existing audio file
-            if self._validate_audio_file(filepath):
-                logger.info(f"Existing audio file is valid, skipping download: {filepath}")
-                return filepath
+            # Validate the existing file if it should be an audio file
+            if validate_audio:
+                if self._validate_audio_file(filepath):
+                    logger.info(f"Existing audio file is valid, skipping download: {filepath}")
+                    return filepath
+                else:
+                    logger.warning(f"Existing audio file is corrupted or incomplete, will re-download: {filepath}")
+                    # Delete corrupted file
+                    try:
+                        filepath.unlink()
+                        logger.info(f"Deleted corrupted audio file: {filepath}")
+                    except Exception as e:
+                        logger.warning(f"Failed to delete corrupted audio file: {e}")
+                    # Continue to download
             else:
-                logger.warning(f"Existing audio file is corrupted or incomplete, will re-download: {filepath}")
-                # Delete corrupted file
-                try:
-                    filepath.unlink()
-                    logger.info(f"Deleted corrupted audio file: {filepath}")
-                except Exception as e:
-                    logger.warning(f"Failed to delete corrupted audio file: {e}")
-                # Continue to download
+                # For non-audio files (like images), just check if it exists
+                logger.info(f"Existing file found, skipping download: {filepath}")
+                return filepath
 
         logger.info(f"Downloading audio file: {url}")
         logger.info(f"Saving to: {filepath}")
@@ -106,15 +112,18 @@ class AudioDownloader:
                             if downloaded % (1024 * 1024) == 0:  # Log every MB
                                 logger.info(f"Downloaded: {downloaded / (1024 * 1024):.2f} MB ({percent:.1f}%)")
 
-            # Validate the downloaded file
-            logger.info("Validating downloaded audio file...")
-            if not self._validate_audio_file(filepath):
-                # Clean up invalid file
-                if filepath.exists():
-                    filepath.unlink()
-                raise RuntimeError("Downloaded audio file failed validation - may be corrupted")
+            # Validate the downloaded file if it should be an audio file
+            if validate_audio:
+                logger.info("Validating downloaded audio file...")
+                if not self._validate_audio_file(filepath):
+                    # Clean up invalid file
+                    if filepath.exists():
+                        filepath.unlink()
+                    raise RuntimeError("Downloaded audio file failed validation - may be corrupted")
+                logger.info(f"Successfully downloaded and validated: {filepath}")
+            else:
+                logger.info(f"Successfully downloaded: {filepath}")
             
-            logger.info(f"Successfully downloaded and validated: {filepath}")
             return filepath
 
         except requests.RequestException as e:
