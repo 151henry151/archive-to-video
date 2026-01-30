@@ -209,24 +209,43 @@ class MetadataFormatter:
     def _sanitize_title(text: str) -> str:
         """
         Sanitize title text by removing HTML tags and entities.
+        Also removes or replaces characters that YouTube doesn't allow.
         
         Args:
             text: Text to sanitize
             
         Returns:
-            Cleaned text without HTML
+            Cleaned text without HTML and invalid characters
         """
         import re
+        if not text:
+            return ''
+        
         # Remove HTML tags
         text = re.sub(r'<[^>]+>', '', text)
         # Decode common HTML entities
         text = text.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&')
         text = text.replace('&nbsp;', ' ').replace('&quot;', '"').replace('&#39;', "'")
+        
+        # Replace characters that YouTube doesn't allow in titles
+        # YouTube doesn't allow: < > \ / : * ? " |
+        # Replace with safe alternatives
+        text = text.replace('<', '').replace('>', '')  # Remove angle brackets
+        text = text.replace('\\', '/')  # Replace backslash with forward slash
+        text = text.replace('|', '-')  # Replace pipe with dash
+        text = text.replace(':', '-')  # Replace colon with dash (optional, but safer)
+        text = text.replace('*', '')  # Remove asterisk
+        text = text.replace('?', '')  # Remove question mark
+        # Keep quotes but ensure they're balanced (simple approach: remove them)
+        text = text.replace('"', '').replace("'", '')
+        
         # Clean up extra whitespace
         text = re.sub(r'\s+', ' ', text).strip()
+        
         # YouTube title limit is 100 characters
         if len(text) > 100:
             text = text[:97] + '...'
+        
         return text
 
     @staticmethod
