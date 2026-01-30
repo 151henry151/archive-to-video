@@ -4,8 +4,10 @@ Audio file downloader from archive.org.
 Handles downloading audio files for processing.
 """
 
+import json
 import logging
 import os
+import subprocess
 from pathlib import Path
 from typing import List, Optional
 from urllib.parse import urlparse
@@ -64,9 +66,21 @@ class AudioDownloader:
         # Check if file already exists (resume capability)
         if skip_if_exists and filepath.exists():
             file_size = filepath.stat().st_size
-            logger.info(f"File already exists, skipping download: {filepath}")
-            logger.info(f"Existing file size: {file_size / (1024 * 1024):.2f} MB")
-            return filepath
+            logger.info(f"Audio file exists: {filepath} ({file_size / (1024 * 1024):.2f} MB)")
+            
+            # Validate the existing audio file
+            if self._validate_audio_file(filepath):
+                logger.info(f"Existing audio file is valid, skipping download: {filepath}")
+                return filepath
+            else:
+                logger.warning(f"Existing audio file is corrupted or incomplete, will re-download: {filepath}")
+                # Delete corrupted file
+                try:
+                    filepath.unlink()
+                    logger.info(f"Deleted corrupted audio file: {filepath}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete corrupted audio file: {e}")
+                # Continue to download
 
         logger.info(f"Downloading audio file: {url}")
         logger.info(f"Saving to: {filepath}")
@@ -92,7 +106,15 @@ class AudioDownloader:
                             if downloaded % (1024 * 1024) == 0:  # Log every MB
                                 logger.info(f"Downloaded: {downloaded / (1024 * 1024):.2f} MB ({percent:.1f}%)")
 
-            logger.info(f"Successfully downloaded: {filepath}")
+            # Validate the downloaded file
+            logger.info("Validating downloaded audio file...")
+            if not self._validate_audio_file(filepath):
+                # Clean up invalid file
+                if filepath.exists():
+                    filepath.unlink()
+                raise RuntimeError("Downloaded audio file failed validation - may be corrupted")
+            
+            logger.info(f"Successfully downloaded and validated: {filepath}")
             return filepath
 
         except requests.RequestException as e:
@@ -115,6 +137,84 @@ class AudioDownloader:
                 logger.debug(f"Cleaned up audio file: {filepath}")
         except Exception as e:
             logger.warning(f"Failed to cleanup audio file {filepath}: {e}")
+
+    def _validate_audio_file(self, audio_path: Path) -> bool:
+        """
+        Validate that an audio file is complete and valid.
+        
+        Args:
+            audio_path: Path to audio file to validate
+            
+        Returns:
+            True if audio is valid, False otherwise
+        """
+        if not audio_path.exists():
+            return False
+        
+        # Check file size - must be at least 1KB (very small files are likely corrupted)
+        file_size = audio_path.stat().st_size
+        if file_size < 1024:  # Less than 1KB is suspicious
+            logger.warning(f"Audio file is suspiciously small ({file_size} bytes), likely corrupted")
+            return False
+        
+        # Validate audio file using ffprobe
+        try:
+            cmd = [
+                'ffprobe',
+                '-v', 'error',
+                '-show_entries', 'format=duration:stream=codec_type',
+                '-of', 'json',
+                str(audio_path)
+            ]
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode != 0:
+                logger.warning(f"ffprobe validation failed for {audio_path.name}: {result.stderr}")
+                return False
+            
+            # Check if we got valid JSON output
+            try:
+                probe_data = json.loads(result.stdout)
+                format_info = probe_data.get('format', {})
+                
+                # Check if format duration exists and is valid
+                duration_str = format_info.get('duration', '0')
+                if duration_str:
+                    duration = float(duration_str)
+                    if duration <= 0:
+                        logger.warning(f"Audio has invalid duration ({duration} seconds)")
+                        return False
+                
+                # Check if audio stream exists
+                streams = probe_data.get('streams', [])
+                has_audio = any(s.get('codec_type') == 'audio' for s in streams)
+                
+                if not has_audio:
+                    logger.warning(f"Audio file has no audio stream")
+                    return False
+                
+                logger.debug(f"Audio file validated successfully: duration={duration:.2f}s, size={file_size / (1024*1024):.2f}MB")
+                return True
+                
+            except (json.JSONDecodeError, ValueError, KeyError) as e:
+                logger.warning(f"Failed to parse ffprobe output for {audio_path.name}: {e}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.warning(f"ffprobe validation timed out for {audio_path.name}")
+            return False
+        except FileNotFoundError:
+            # ffprobe not found - skip validation but warn
+            logger.warning("ffprobe not found, skipping audio validation")
+            return True  # Assume valid if we can't validate
+        except Exception as e:
+            logger.warning(f"Error validating audio file {audio_path.name}: {e}")
+            return False
 
     def find_existing_files(self, identifier: str) -> List[Path]:
         """
