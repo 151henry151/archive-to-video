@@ -166,8 +166,21 @@ class ArchiveToYouTube:
                         created_video_files.append(video_path)
 
                         # Format metadata
+                        # Sanitize track name before formatting (extra safety)
+                        track_info_clean = track_info.copy()
+                        track_name_clean = track_info_clean.get('name', '')
+                        # Remove HTML tags if present
+                        import re
+                        track_name_clean = re.sub(r'<[^>]+>', '', track_name_clean)
+                        track_name_clean = track_name_clean.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&')
+                        track_name_clean = re.sub(r'\s+', ' ', track_name_clean).strip()
+                        # If track name is too long or contains multiple tracks, take first line only
+                        if len(track_name_clean) > 100 or '\n' in track_name_clean:
+                            track_name_clean = track_name_clean.split('\n')[0].strip()
+                        track_info_clean['name'] = track_name_clean
+                        
                         video_title = self.metadata_formatter.format_video_title(
-                            track_info,
+                            track_info_clean,
                             metadata
                         )
                         video_description = self.metadata_formatter.format_track_description(

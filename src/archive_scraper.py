@@ -178,25 +178,53 @@ class ArchiveScraper:
         if not description:
             return tracks
 
+        # Clean HTML tags and entities from description
+        # Replace HTML line breaks with newlines first
+        description_clean = re.sub(r'<br\s*/?>', '\n', description, flags=re.IGNORECASE)
+        # Remove other HTML tags
+        description_clean = re.sub(r'<[^>]+>', ' ', description_clean)
+        # Decode HTML entities
+        description_clean = description_clean.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&')
+        description_clean = description_clean.replace('&nbsp;', ' ')
+
         # Look for numbered track list patterns
         # Format: "01. Track Name" or "1. Track Name"
+        # Match until end of line or next track number
         track_patterns = [
-            r'(\d{2})\.\s*(.+?)(?:\n|$)',  # Two-digit format: 01. Track
-            r'(\d{1,2})\.\s*(.+?)(?:\n|$)',  # One or two digit: 1. Track or 01. Track
+            r'(\d{2})\.\s*([^\n]+?)(?=\s*\d{2}\.\s*|\s*\d{1}\.\s*|$|\n\n)',  # Two-digit format: 01. Track (stop at next track or double newline)
+            r'(\d{1,2})\.\s*([^\n]+?)(?=\s*\d{1,2}\.\s*|$|\n\n)',  # One or two digit format
         ]
 
         for pattern in track_patterns:
-            matches = re.findall(pattern, description, re.MULTILINE)
+            matches = re.findall(pattern, description_clean, re.MULTILINE)
             if matches:
                 for number, name in matches:
                     # Pad single digits to two digits
                     track_num = number.zfill(2)
-                    tracks.append({
-                        'number': track_num,
-                        'name': name.strip()
-                    })
-                break  # Use first pattern that finds matches
+                    # Clean up track name: remove extra whitespace, HTML remnants
+                    clean_name = re.sub(r'\s+', ' ', name.strip())
+                    # Remove any remaining HTML entities
+                    clean_name = clean_name.replace('&nbsp;', ' ').strip()
+                    
+                    # Only add if we have a valid track name (not empty, not just whitespace)
+                    # And make sure it's not capturing multiple tracks
+                    if clean_name and len(clean_name) > 0 and len(clean_name) < 200:  # Reasonable length limit
+                        tracks.append({
+                            'number': track_num,
+                            'name': clean_name
+                        })
+                
+                # Only use matches if we got reasonable number of tracks (more than 1)
+                if len(tracks) > 1:
+                    logger.debug(f"Extracted {len(tracks)} tracks from description")
+                    break  # Use first pattern that finds matches
+                else:
+                    tracks = []  # Reset if we didn't get good matches
 
+        # Log first few tracks for debugging
+        if tracks:
+            logger.debug(f"Sample tracks extracted: {tracks[:3]}")
+        
         return tracks
 
     def _extract_tracks_from_files(self, files: List[Dict]) -> List[Dict[str, str]]:

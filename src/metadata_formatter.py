@@ -206,6 +206,30 @@ class MetadataFormatter:
         return "\n".join(parts)
 
     @staticmethod
+    def _sanitize_title(text: str) -> str:
+        """
+        Sanitize title text by removing HTML tags and entities.
+        
+        Args:
+            text: Text to sanitize
+            
+        Returns:
+            Cleaned text without HTML
+        """
+        import re
+        # Remove HTML tags
+        text = re.sub(r'<[^>]+>', '', text)
+        # Decode common HTML entities
+        text = text.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&')
+        text = text.replace('&nbsp;', ' ').replace('&quot;', '"').replace('&#39;', "'")
+        # Clean up extra whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        # YouTube title limit is 100 characters
+        if len(text) > 100:
+            text = text[:97] + '...'
+        return text
+
+    @staticmethod
     def format_video_title(track: Dict, metadata: Dict) -> str:
         """
         Format title for a single track video.
@@ -215,9 +239,12 @@ class MetadataFormatter:
             metadata: Full metadata
 
         Returns:
-            Video title
+            Video title (sanitized, no HTML)
         """
         track_name = track.get('name', 'Unknown Track')
+        # Sanitize track name to remove HTML tags
+        track_name = MetadataFormatter._sanitize_title(track_name)
+        
         artist = metadata.get('artist', '')
         date = metadata.get('date', '')
 
@@ -232,5 +259,7 @@ class MetadataFormatter:
             except ValueError:
                 parts.append(f"({date})")
 
-        return " - ".join(parts)
+        title = " - ".join(parts)
+        # Final sanitization of the complete title
+        return MetadataFormatter._sanitize_title(title)
 
