@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0-beta] - 2026-01-30
+
+### Added
+- Track-to-audio matching verification: ensures matched audio files contain correct track number
+- Detailed logging for audio file URLs and filenames during track processing
+- `get_playlist_items()` method to retrieve playlist videos with their positions
+- `insert_video_to_playlist()` method to insert videos at specific positions
+- Automatic detection of gaps in existing playlists
+- Logic to insert missing videos at correct positions when gaps are detected
+- Track index-based video ID mapping to maintain correct track order
+
+### Changed
+- Improved track-to-audio matching with verification step to prevent incorrect matches
+- Video ID collection now maintains correct track order using track index mapping
+- Enhanced logging shows audio URL and filename for each track being processed
+
+### Fixed
+- Fixed critical bug where track 3 was getting track 1's audio (and similar mismatches)
+- Fixed video ID ordering to ensure playlist maintains correct track sequence
+- Fixed playlist gap detection to properly identify and fill missing videos
+
+### Tested
+- **Verified working correctly with example URL**: `https://archive.org/details/lf2007-11-21.a`
+  - All 16 tracks correctly matched to their audio files
+  - All videos uploaded with correct titles and audio
+  - Playlist created with tracks in correct order
+  - Gap detection and insertion working correctly
+
 ## [0.4.0-beta] - 2026-01-30
 
 ### Added
@@ -95,7 +123,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic cleanup of temporary files
 - Full documentation (README.md, ARCHITECTURE.md)
 
-[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.3.1-beta...HEAD
+[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.5.0-beta...HEAD
+[0.5.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.4.0-beta...v0.5.0-beta
+[0.4.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.3.1-beta...v0.4.0-beta
 [0.3.1-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.3.0-beta...v0.3.1-beta
 [0.3.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.2.0-beta...v0.3.0-beta
 [0.2.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.1.0-beta...v0.2.0-beta
