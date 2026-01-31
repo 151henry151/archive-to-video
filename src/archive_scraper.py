@@ -503,7 +503,7 @@ class ArchiveScraper:
                     pattern_re = re.compile(r'(^|[^0-9])' + re.escape(pattern) + r'([^0-9]|\.|$)', re.IGNORECASE)
                     if pattern_re.search(filename.lower()):
                         matched = True
-                                    logger.debug(f"Matched specific pattern '{pattern}' in '{filename}' for track {track_num} '{track_name}'")
+                        logger.debug(f"Matched specific pattern '{pattern}' in '{filename}' for track {track_num} '{track_name}'")
                         break
                 
                 # If no specific pattern matched, try generic numeric patterns (but be more careful)
