@@ -11,6 +11,20 @@ This tool automates the process of:
 4. Uploading videos to YouTube with formatted descriptions
 5. Creating a YouTube playlist containing all tracks
 
+## Screenshots
+
+The tool provides a preview of what will be uploaded before proceeding:
+
+![Preview of tracks and metadata](screenshots/Screenshot_2026-01-31_13-47-27.png)
+
+After confirmation, it processes each track and shows progress:
+
+![Processing tracks](screenshots/Screenshot_2026-01-31_13-48-22.png)
+
+Once complete, you can review and optionally publish the playlist:
+
+![Review and publish](screenshots/Screenshot_2026-01-31_13-48-43.png)
+
 ## Prerequisites
 
 - Python 3.8 or higher
