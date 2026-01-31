@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0-beta] - 2026-01-30
+
+### Added
+- Support for multi-disc recordings (d1t01, d2t01 filename patterns)
+- Automatic extraction of disc 2+ tracks from filenames when description only lists disc 1
+- Improved track extraction with better section detection and filtering
+- Case-sensitive pattern matching for better false positive filtering
+- Duplicate track detection to prevent extracting the same track multiple times
+- Generic track naming ("Track 01", "Track 02") when descriptions only contain filenames
+- Better handling of track names that are filenames (e.g., "Lane Family.2011-06-25.t01")
+- FLAC preference over MP3 when extracting tracks from files to avoid duplicates
+
+### Changed
+- Track extraction now uses consecutive track pattern detection for more reliable section identification
+- Improved invalid pattern filtering with case-sensitive checks for uppercase-only patterns
+- `_extract_tracks_from_files()` now correctly extracts track numbers from T01, t01, d1t01 patterns
+- Track-to-audio matching handles disc-based sequential numbering (track 11 matches d2t01, etc.)
+- Better handling of descriptions where track names are filenames instead of actual song titles
+
+### Fixed
+- Fixed "Flinstones" being incorrectly filtered as invalid (case-sensitive pattern matching)
+- Fixed track extraction creating duplicates when filenames are listed in description
+- Fixed track number extraction from filenames (was extracting "20" from "2010" in dates)
+- Fixed track-to-audio matching for disc-based files (d1t01, d2t01 patterns)
+- Fixed sequential track numbering across multiple discs
+
+### Tested
+- **Verified working with multiple archive.org URL formats**:
+  - `https://archive.org/details/lf2007-11-21.a` (original - 16 tracks with proper names)
+  - `https://archive.org/details/lf2008-10-11` (multi-disc - 38 tracks, disc 1 with names, disc 2 without)
+  - `https://archive.org/details/lf2010-04-02` (15 tracks with proper names)
+  - `https://archive.org/details/lf2011-06-25` (20 tracks, filenames in description)
+  - `https://archive.org/details/lf2008-05-12` (16 tracks with proper names)
+  - `https://archive.org/details/lf2011-11-04.romp.flac16` (16 tracks, filenames in description)
+  - `https://archive.org/details/lf2018-09-08` (18 tracks, filenames in description)
+  - `https://archive.org/details/romp2011-11-04.flac16` (16 tracks, filenames in description)
+
 ## [0.5.0-beta] - 2026-01-30
 
 ### Added

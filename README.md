@@ -152,7 +152,9 @@ This will:
 ## How It Works
 
 1. **Metadata Extraction**: Uses Archive.org Metadata API to extract:
-   - Track list with names (parsed from description)
+   - Track list with names (parsed from description or inferred from filenames)
+   - Supports multi-disc recordings (automatically extracts disc 2+ tracks)
+   - Handles various track list formats (numbered lists, filenames, etc.)
    - Artist, venue, date, location
    - Credits (taped by, transferred by)
    - Background image URL

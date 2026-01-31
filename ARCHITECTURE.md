@@ -48,11 +48,12 @@ The Archive.org to YouTube uploader is a Python application that automates the c
 **Key Methods**:
 - `fetch_api_data()`: Fetches JSON metadata from Archive.org Metadata API
 - `extract_metadata()`: Extracts all metadata fields from API response
-- `_extract_tracks_from_description()`: Parses track list from description text
+- `_extract_tracks_from_description()`: Parses track list from description text with improved pattern matching
 - `_extract_tracks_from_files()`: Infers tracks from audio filenames if description parsing fails
+- `_extract_tracks_from_files_disc_aware()`: Extracts disc 2+ tracks from filenames for multi-disc recordings
 - `_extract_background_image()`: Finds background image from API file list
-- `_find_audio_files()`: Gets audio files directly from API file list
-- `get_audio_file_urls()`: Matches tracks to downloadable audio files
+- `_find_audio_files()`: Gets audio files directly from API file list (prefers FLAC over MP3)
+- `get_audio_file_urls()`: Matches tracks to downloadable audio files (handles disc-based patterns)
 
 **Technologies**:
 - `requests`: HTTP requests to Archive.org Metadata API
@@ -67,8 +68,11 @@ The Archive.org to YouTube uploader is a Python application that automates the c
 - Title, artist, venue, location, date (from API metadata)
 - Credits (taped by, transferred by) (from API metadata)
 - Track list with numbers and names (parsed from description or inferred from filenames)
+  - Supports multi-disc recordings (d1t01, d2t01 patterns)
+  - Handles descriptions with filenames as track names
+  - Automatically extracts disc 2+ tracks when description only lists disc 1
 - Background image URL (from API file list)
-- Audio file URLs (directly from API file list with download URLs)
+- Audio file URLs (directly from API file list with download URLs, prefers FLAC over MP3)
 
 ### 2. AudioDownloader (`src/audio_downloader.py`)
 
