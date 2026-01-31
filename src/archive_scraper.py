@@ -107,6 +107,37 @@ class ArchiveScraper:
         # If no tracks found in description, try to infer from filenames
         if not tracks:
             tracks = self._extract_tracks_from_files(files)
+        else:
+            # Check if there are more audio files than tracks extracted from description
+            # This handles cases like disc 2 where description doesn't list individual tracks
+            audio_files = [
+                f for f in files 
+                if any(f.get('name', '').lower().endswith(ext) for ext in ['.flac', '.mp3', '.wav', '.m4a', '.ogg', '.oggvorbis'])
+            ]
+            # Count unique tracks (prefer FLAC, ignore MP3 duplicates)
+            unique_tracks = set()
+            for f in audio_files:
+                filename = f.get('name', '').lower()
+                # Extract disc and track pattern (e.g., d1t01, d2t01)
+                disc_track_match = re.search(r'd(\d+)t(\d+)', filename)
+                if disc_track_match:
+                    disc_num = disc_track_match.group(1)
+                    track_num = disc_track_match.group(2)
+                    unique_tracks.add(f"d{disc_num}t{track_num}")
+                else:
+                    # Fallback: extract any track number pattern
+                    track_match = re.search(r't(\d+)', filename)
+                    if track_match:
+                        unique_tracks.add(f"t{track_match.group(1)}")
+            
+            # If we have more unique tracks than extracted tracks, extract additional ones from filenames
+            if len(unique_tracks) > len(tracks):
+                logger.info(f"Found {len(unique_tracks)} unique audio tracks but only {len(tracks)} tracks in description")
+                logger.info("Extracting additional tracks from filenames...")
+                additional_tracks = self._extract_tracks_from_files_disc_aware(files, existing_track_count=len(tracks))
+                if additional_tracks:
+                    tracks.extend(additional_tracks)
+                    logger.info(f"Added {len(additional_tracks)} additional tracks from filenames (total: {len(tracks)})")
 
         # Extract background image
         background_image_url = self._extract_background_image(files)
@@ -297,6 +328,106 @@ class ArchiveScraper:
         
         return tracks
 
+    def _extract_tracks_from_files_disc_aware(self, files: List[Dict], existing_track_count: int = 0) -> List[Dict[str, str]]:
+        """
+        Extract tracks from filenames, handling disc-based naming (d1t01, d2t01).
+        Only extracts tracks that aren't already in the existing tracks list.
+        
+        Args:
+            files: List of file dictionaries from API
+            existing_track_count: Number of tracks already extracted (to continue numbering)
+            
+        Returns:
+            List of dictionaries with 'number' and 'name' keys
+        """
+        tracks = []
+        audio_extensions = ['.flac', '.mp3', '.wav', '.m4a', '.ogg', '.oggvorbis']
+        
+        # Filter audio files, prefer FLAC over MP3
+        audio_files = []
+        seen_tracks = set()
+        
+        for f in files:
+            filename = f.get('name', '')
+            if not any(filename.lower().endswith(ext) for ext in audio_extensions):
+                continue
+            
+            # Extract disc and track pattern (e.g., d1t01, d2t01)
+            disc_track_match = re.search(r'd(\d+)t(\d+)', filename.lower())
+            if disc_track_match:
+                disc_num = disc_track_match.group(1)
+                track_num = disc_track_match.group(2)
+                track_key = f"d{disc_num}t{track_num}"
+                
+                # Prefer FLAC over MP3
+                if track_key not in seen_tracks or filename.lower().endswith('.flac'):
+                    if track_key in seen_tracks:
+                        # Replace MP3 with FLAC
+                        for i, existing in enumerate(audio_files):
+                            if existing.get('key') == track_key and not existing.get('filename', '').lower().endswith('.flac'):
+                                audio_files[i] = {'filename': filename, 'key': track_key, 'disc': disc_num, 'track': track_num}
+                                break
+                    else:
+                        audio_files.append({'filename': filename, 'key': track_key, 'disc': disc_num, 'track': track_num})
+                        seen_tracks.add(track_key)
+            else:
+                # Fallback: extract any track number
+                track_match = re.search(r't(\d+)', filename.lower())
+                if track_match:
+                    track_num = track_match.group(1)
+                    track_key = f"t{track_num}"
+                    if track_key not in seen_tracks or filename.lower().endswith('.flac'):
+                        if track_key not in seen_tracks:
+                            audio_files.append({'filename': filename, 'key': track_key, 'disc': '1', 'track': track_num})
+                            seen_tracks.add(track_key)
+        
+        # Filter to only disc 2 tracks (or tracks not in disc 1)
+        # We only want to add tracks that aren't already extracted from description
+        disc2_files = [af for af in audio_files if af.get('disc', '1') != '1']
+        disc1_files = [af for af in audio_files if af.get('disc', '1') == '1']
+        
+        # Only extract disc 2 tracks (or if no disc info, extract all that aren't disc 1)
+        files_to_extract = disc2_files if disc2_files else [af for af in audio_files if af not in disc1_files]
+        
+        # Sort by disc number, then track number
+        files_to_extract.sort(key=lambda x: (int(x.get('disc', 2)), int(x.get('track', 0))))
+        
+        # Extract tracks starting from existing_track_count + 1
+        track_counter = existing_track_count + 1
+        for audio_file in files_to_extract:
+            filename = audio_file['filename']
+            track_num_from_file = audio_file.get('track', '01')
+            disc_num = audio_file.get('disc', '2')
+            
+            # Use sequential numbering across discs
+            track_num = f"{track_counter:02d}"
+            
+            # Extract track name from filename (use basename only)
+            track_name = os.path.basename(filename)
+            track_name = re.sub(r'\.(flac|mp3|wav|m4a|ogg|oggvorbis)$', '', track_name, flags=re.IGNORECASE)
+            # Remove disc/track patterns (d1t01, d2t01, etc.)
+            track_name = re.sub(r'[dD]\d+[tT]\d+', '', track_name)
+            track_name = re.sub(r'^(track[-_\s]*\d+[-_\s]*)', '', track_name, flags=re.IGNORECASE)
+            # Remove common prefixes
+            track_name = re.sub(r'^(studio[-_\s]*album[-_\s]*)', '', track_name, flags=re.IGNORECASE)
+            track_name = re.sub(r'^romp[-_\s]*', '', track_name, flags=re.IGNORECASE)
+            track_name = re.sub(r'[-_\s]+', ' ', track_name).strip()
+            
+            if not track_name or len(track_name) < 3:
+                # Use generic name with disc info
+                if disc_num != '1':
+                    track_name = f"Disc {disc_num}, Track {track_num_from_file}"
+                else:
+                    track_name = f"Track {track_num_from_file}"
+            
+            tracks.append({
+                'number': track_num,
+                'name': track_name
+            })
+            track_counter += 1
+        
+        return tracks
+
     def _extract_tracks_from_files(self, files: List[Dict]) -> List[Dict[str, str]]:
         """
         Try to infer tracks from audio file names.
@@ -384,6 +515,7 @@ class ArchiveScraper:
     def _find_audio_files(self) -> List[Dict[str, str]]:
         """
         Find all audio files from the API files list.
+        Prefers FLAC over MP3 to avoid duplicates.
 
         Returns:
             List of dictionaries with file information
@@ -394,25 +526,63 @@ class ArchiveScraper:
         files = self.api_data.get('files', [])
         audio_files = []
         audio_extensions = ['.flac', '.mp3', '.wav', '.m4a', '.ogg', '.oggvorbis']
+        
+        # Track unique tracks (by disc/track pattern) to prefer FLAC over MP3
+        seen_tracks = {}
+        file_priority = {'.flac': 1, '.wav': 2, '.m4a': 3, '.ogg': 4, '.oggvorbis': 4, '.mp3': 5}
 
         for file_info in files:
             filename = file_info.get('name', '')
-            if any(filename.lower().endswith(ext) for ext in audio_extensions):
-                # Construct download URL
-                # Pattern: https://archive.org/download/IDENTIFIER/FILENAME
-                # Note: filename may include directory path, but URL needs full path
-                download_url = f"https://archive.org/download/{self.identifier}/{filename}"
-                # Sanitize filename for local storage (use basename only)
-                safe_filename = os.path.basename(filename)
+            if not any(filename.lower().endswith(ext) for ext in audio_extensions):
+                continue
+            
+            # Extract track identifier (disc+track pattern or just track)
+            track_key = None
+            disc_track_match = re.search(r'[dD](\d+)[tT](\d+)', filename)
+            if disc_track_match:
+                track_key = f"d{disc_track_match.group(1)}t{disc_track_match.group(2)}"
+            else:
+                track_match = re.search(r'[tT](\d+)', filename)
+                if track_match:
+                    track_key = f"t{track_match.group(1)}"
+            
+            # Construct download URL
+            download_url = f"https://archive.org/download/{self.identifier}/{filename}"
+            safe_filename = os.path.basename(filename)
+            
+            # Get file extension priority
+            ext_priority = 999
+            for ext, priority in file_priority.items():
+                if filename.lower().endswith(ext):
+                    ext_priority = priority
+                    break
+            
+            # If we have a track key, prefer higher quality (lower priority number)
+            if track_key:
+                if track_key not in seen_tracks or ext_priority < seen_tracks[track_key]['priority']:
+                    seen_tracks[track_key] = {
+                        'filename': safe_filename,
+                        'url': download_url,
+                        'priority': ext_priority
+                    }
+            else:
+                # No track key, just add it
                 audio_files.append({
-                    'filename': safe_filename,  # Use sanitized filename for local storage
+                    'filename': safe_filename,
                     'url': download_url
                 })
+        
+        # Add unique tracks (preferring FLAC)
+        for track_data in seen_tracks.values():
+            audio_files.append({
+                'filename': track_data['filename'],
+                'url': track_data['url']
+            })
 
         # Sort by filename to maintain consistent order
         audio_files.sort(key=lambda x: x['filename'].lower())
         
-        logger.info(f"Found {len(audio_files)} audio files from API")
+        logger.info(f"Found {len(audio_files)} unique audio files from API (preferring FLAC over MP3)")
         return audio_files
 
     def get_audio_file_urls(self) -> List[Dict[str, str]]:
@@ -448,6 +618,7 @@ class ArchiveScraper:
         for track in tracks:
             track_num = track['number']
             track_name = track['name']
+            track_index = int(track_num) - 1  # 0-based index
 
             # Try to find matching audio file
             matched_file = None
@@ -459,6 +630,36 @@ class ArchiveScraper:
                 # Check if track number is in filename (various formats)
                 track_num_str = track_num.lstrip('0')  # Remove leading zeros
                 track_num_padded = track_num.zfill(2)  # Ensure two digits
+                
+                # For disc-based files, calculate which sequential track this file corresponds to
+                # Check if this is a disc-based file (d1t01, d2t01, etc.)
+                disc_track_match = re.search(r'd(\d+)t(\d+)', filename)
+                if disc_track_match:
+                    file_disc = int(disc_track_match.group(1))
+                    file_track = int(disc_track_match.group(2))
+                    
+                    # Calculate which sequential track number this disc/track corresponds to
+                    # Count how many tracks are in disc 1 (tracks numbered 01-10 typically)
+                    disc1_tracks = len([t for t in tracks if int(t['number']) <= 10])
+                    
+                    if file_disc == 1:
+                        # Disc 1 tracks are numbered 01-10 (or however many disc 1 has)
+                        file_sequential_track = file_track
+                    else:
+                        # Disc 2+ tracks continue the numbering after disc 1
+                        file_sequential_track = disc1_tracks + file_track
+                    
+                    # Check if this file's sequential track number matches our current track
+                    if file_sequential_track == int(track_num):
+                        matched = True
+                        logger.debug(f"Matched disc-based pattern: track {track_num} to file '{filename}' (disc {file_disc}, track {file_track})")
+                        matched_file = audio_file
+                        used_audio_files.add(i)
+                        logger.info(f"✓ Matched track {track_num} '{track_name}' to audio file [{i}] {audio_file['filename']}")
+                        logger.info(f"  Verified: disc {file_disc}, track {file_track} -> sequential track {file_sequential_track}")
+                        break
+                    else:
+                        continue  # Skip this file, it's for a different sequential track number
                 
                 # Common patterns: t01, t02, track01, track-01, track_01, 01., etc.
                 # Also check for patterns like "t01" (common in archive.org: Romp2007-11-21t01.flac)
@@ -484,10 +685,15 @@ class ArchiveScraper:
                 # Check if any pattern matches in the filename
                 # Prioritize more specific patterns (t01, t02) over generic numeric patterns
                 matched = False
-                import re
                 
-                # First try specific patterns (t01, track01, etc.) - these are more reliable
+                # First try specific patterns (t01, track01, d1t01, d2t01, etc.) - these are more reliable
                 specific_patterns = [
+                    f"d1t{track_num_padded}",  # d1t01, d1t02 (disc 1)
+                    f"d1t{track_num_str}",    # d1t1, d1t2
+                    f"d2t{track_num_padded}",  # d2t01, d2t02 (disc 2)
+                    f"d2t{track_num_str}",    # d2t1, d2t2
+                    rf"d\d+t{track_num_padded}",  # dXt01 (any disc)
+                    rf"d\d+t{track_num_str}",     # dXt1 (any disc)
                     f"t{track_num_padded}",  # t01, t02 (most common in archive.org)
                     f"t{track_num_str}",     # t1, t2
                     f"track{track_num_padded}",
@@ -499,8 +705,13 @@ class ArchiveScraper:
                 ]
                 
                 for pattern in specific_patterns:
-                    # For specific patterns, check they're not part of a larger number
-                    pattern_re = re.compile(r'(^|[^0-9])' + re.escape(pattern) + r'([^0-9]|\.|$)', re.IGNORECASE)
+                    # For patterns with regex (like d\d+t), compile directly
+                    if '\\d' in pattern:
+                        pattern_re = re.compile(pattern, re.IGNORECASE)
+                    else:
+                        # For literal patterns, check they're not part of a larger number
+                        pattern_re = re.compile(r'(^|[^0-9])' + re.escape(pattern) + r'([^0-9]|\.|$)', re.IGNORECASE)
+                    
                     if pattern_re.search(filename.lower()):
                         matched = True
                         logger.debug(f"Matched specific pattern '{pattern}' in '{filename}' for track {track_num} '{track_name}'")
@@ -542,6 +753,12 @@ class ArchiveScraper:
                     
                     # Verify the match is correct by checking for track number patterns
                     verification_patterns = [
+                        f"d1t{track_num_padded}",  # d1t03
+                        f"d1t{track_num_str}",     # d1t3
+                        f"d2t{track_num_padded}",  # d2t03
+                        f"d2t{track_num_str}",     # d2t3
+                        rf"d\d+t{track_num_padded}",  # dXt03 (any disc)
+                        rf"d\d+t{track_num_str}",     # dXt3 (any disc)
                         f"t{track_num_padded}",  # t03
                         f"t{track_num_str}",     # t3
                         f"track{track_num_padded}",
@@ -556,7 +773,12 @@ class ArchiveScraper:
                     
                     verified = False
                     for pattern in verification_patterns:
-                        pattern_re = re.compile(r'(^|[^0-9])' + re.escape(pattern) + r'([^0-9]|\.|$)', re.IGNORECASE)
+                        # Handle regex patterns (like d\d+t)
+                        if '\\d' in pattern:
+                            pattern_re = re.compile(pattern, re.IGNORECASE)
+                        else:
+                            pattern_re = re.compile(r'(^|[^0-9])' + re.escape(pattern) + r'([^0-9]|\.|$)', re.IGNORECASE)
+                        
                         if pattern_re.search(filename_lower):
                             verified = True
                             break
