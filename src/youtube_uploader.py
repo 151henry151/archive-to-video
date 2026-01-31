@@ -345,6 +345,60 @@ class YouTubeUploader:
             logger.warning("Will proceed with uploading (may create duplicates)")
             return found_videos
 
+    def find_existing_playlist(self, expected_title: str, archive_url: str = '') -> Optional[str]:
+        """
+        Search for an existing playlist on YouTube that matches the expected title.
+        
+        Args:
+            expected_title: Expected playlist title to search for
+            archive_url: Optional archive.org URL to verify in description
+            
+        Returns:
+            Playlist ID if found, None otherwise
+        """
+        logger.info(f"Searching for existing playlist: {expected_title}")
+        
+        try:
+            # Get all playlists owned by the authenticated user
+            playlists_response = self.youtube.playlists().list(
+                part='snippet,status',
+                mine=True,
+                maxResults=50  # Should be enough for most users
+            ).execute()
+            
+            # Search for matching playlist
+            for playlist in playlists_response.get('items', []):
+                playlist_title = playlist['snippet']['title']
+                playlist_description = playlist['snippet'].get('description', '')
+                playlist_id = playlist['id']
+                
+                # Check if title matches (fuzzy match)
+                normalized_expected = ' '.join(expected_title.lower().split())
+                normalized_playlist = ' '.join(playlist_title.lower().split())
+                
+                if (normalized_expected == normalized_playlist or 
+                    normalized_expected in normalized_playlist or 
+                    normalized_playlist in normalized_expected):
+                    # If archive_url provided, verify it's in the description
+                    if archive_url:
+                        if archive_url in playlist_description:
+                            logger.info(f"Found existing playlist: '{playlist_title}' -> {playlist_id}")
+                            return playlist_id
+                    else:
+                        # No URL to verify, just match by title
+                        logger.info(f"Found existing playlist: '{playlist_title}' -> {playlist_id}")
+                        return playlist_id
+            
+            logger.info("No existing playlist found")
+            return None
+            
+        except HttpError as e:
+            logger.warning(f"Error searching for existing playlist: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Error searching for existing playlist: {e}")
+            return None
+
     def create_playlist(
         self,
         title: str,

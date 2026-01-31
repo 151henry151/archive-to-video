@@ -286,30 +286,67 @@ class ArchiveToYouTube:
                         logger.info("Audio and video files preserved for resume capability")
                         continue
 
-                # Step 6: Create playlist
-                if uploaded_video_ids:
-                    logger.info(f"\n{'='*60}")
-                    logger.info("Creating YouTube playlist...")
-                    logger.info(f"{'='*60}")
+                # Step 6: Check for existing playlist or create new one
+                playlist_title = self.metadata_formatter.format_playlist_title(metadata)
+                playlist_description = self.metadata_formatter.format_playlist_description(
+                    metadata,
+                    tracks
+                )
+                
+                # Check if playlist already exists
+                existing_playlist_id = self.youtube_uploader.find_existing_playlist(
+                    playlist_title,
+                    metadata.get('url', '')
+                )
+                
+                if existing_playlist_id:
+                    logger.info(f"Found existing playlist: {existing_playlist_id}")
+                    playlist_id = existing_playlist_id
+                    
+                    # If all videos exist and playlist exists, we can skip straight to review
+                    if len(uploaded_video_ids) == 0 and len(existing_videos) == len(track_audio):
+                        logger.info(f"\n{'='*60}")
+                        logger.info("All videos and playlist already exist!")
+                        logger.info(f"{'='*60}")
+                        logger.info(f"Found {len(existing_videos)} existing videos")
+                        logger.info(f"Found existing playlist")
+                        logger.info("Skipping to review and publish step...")
+                    else:
+                        logger.info("Using existing playlist, but some videos may be new")
+                else:
+                    # Create new playlist
+                    if uploaded_video_ids:
+                        logger.info(f"\n{'='*60}")
+                        logger.info("Creating YouTube playlist...")
+                        logger.info(f"{'='*60}")
 
-                    playlist_title = self.metadata_formatter.format_playlist_title(metadata)
-                    playlist_description = self.metadata_formatter.format_playlist_description(
-                        metadata,
-                        tracks
-                    )
+                        playlist_id = self.youtube_uploader.create_playlist(
+                            playlist_title,
+                            playlist_description,
+                            uploaded_video_ids
+                        )
+                    else:
+                        logger.error("No videos to add to playlist")
+                        playlist_id = None
 
-                    playlist_id = self.youtube_uploader.create_playlist(
-                        playlist_title,
-                        playlist_description,
-                        uploaded_video_ids
-                    )
-
+                # Step 7: Review and publish (if we have a playlist)
+                if playlist_id:
                     playlist_url = f"https://www.youtube.com/playlist?list={playlist_id}"
+                    
+                    # Collect all video IDs (both newly uploaded and existing)
+                    all_video_ids = uploaded_video_ids.copy()
+                    for title, video_id in existing_videos.items():
+                        if video_id not in all_video_ids:
+                            all_video_ids.append(video_id)
                     
                     logger.info(f"\n{'='*60}")
                     logger.info("SUCCESS!")
                     logger.info(f"{'='*60}")
-                    logger.info(f"Uploaded {len(uploaded_video_ids)} videos")
+                    if uploaded_video_ids:
+                        logger.info(f"Uploaded {len(uploaded_video_ids)} new videos")
+                    if existing_videos:
+                        logger.info(f"Found {len(existing_videos)} existing videos")
+                    logger.info(f"Total: {len(all_video_ids)} videos in playlist")
                     logger.info(f"Playlist: {playlist_url}")
                     logger.info(f"Videos and playlist are currently set to PRIVATE")
                     
@@ -326,8 +363,8 @@ class ArchiveToYouTube:
                             if response in ['yes', 'y']:
                                 logger.info("Making videos and playlist public...")
                                 
-                                # Make all videos public
-                                success_count = self.youtube_uploader.make_videos_public(uploaded_video_ids)
+                                # Make all videos public (both new and existing)
+                                success_count = self.youtube_uploader.make_videos_public(all_video_ids)
                                 
                                 # Make playlist public
                                 if self.youtube_uploader.update_playlist_privacy(playlist_id, 'public'):
@@ -351,7 +388,7 @@ class ArchiveToYouTube:
                             logger.info("You can change privacy settings later in YouTube Studio")
                             break
                 else:
-                    logger.error("No videos were successfully uploaded")
+                    logger.error("No playlist available")
 
             finally:
                 # Final cleanup - only clean up successfully uploaded files
