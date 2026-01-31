@@ -160,7 +160,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic cleanup of temporary files
 - Full documentation (README.md, ARCHITECTURE.md)
 
-[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.5.0-beta...HEAD
+[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v0.6.0-beta...HEAD
+[0.6.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.5.0-beta...v0.6.0-beta
 [0.5.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.4.0-beta...v0.5.0-beta
 [0.4.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.3.1-beta...v0.4.0-beta
 [0.3.1-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.3.0-beta...v0.3.1-beta
