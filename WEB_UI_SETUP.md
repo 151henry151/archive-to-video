@@ -9,7 +9,8 @@ The web UI uses a **Web application** OAuth client (not the Desktop client used 
 3. **Application type:** Web application
 4. **Authorized redirect URIs:** Add:
    - `http://localhost:18765/api/auth/youtube/callback` (local dev)
-   - `https://your-domain.com/api/auth/youtube/callback` (production)
+   - `https://your-domain.com/api/auth/youtube/callback` (subdomain)
+   - `https://hromp.com/archive-to-yt/app/api/auth/youtube/callback` (path-based at hromp.com)
 5. Download the JSON and save as `config/client_secrets.json` (replace or keep both Desktop + Web entries in the same file if your JSON supports multiple clients)
 
 > **Note:** The same `client_secrets.json` can contain both "installed" (for CLI) and "web" (for web UI) client configs. The Flow will use the appropriate one based on `redirect_uri`.
@@ -42,6 +43,22 @@ Open http://localhost:18765
 2. Run with volume: `docker run -p 18765:18765 -v $(pwd)/config:/app/config:ro -e SECRET_KEY=xxx archive-to-yt`
 3. Configure nginx to proxy to `http://127.0.0.1:18765`
 4. Set `BASE_URL` to your public URL (e.g. `https://archive-to-yt.example.com`)
+
+### Path-based deployment (e.g. hromp.com/archive-to-yt/app)
+
+When the app is served under a path (not a subdomain), set `BASE_URL` to the full public URL:
+
+```bash
+export BASE_URL="https://hromp.com/archive-to-yt/app"
+export SECRET_KEY="your-secret-key"
+python run_web.py
+```
+
+Nginx should proxy `/archive-to-yt/app/` to `http://127.0.0.1:18765/` (strip the path prefix). Add the exact callback URL to Google OAuth:
+
+```
+https://hromp.com/archive-to-yt/app/api/auth/youtube/callback
+```
 
 ## Environment Variables
 

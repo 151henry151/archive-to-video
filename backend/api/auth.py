@@ -6,6 +6,13 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import RedirectResponse
 
 from backend.utils import get_base_url
+
+
+def _landing_url(request: Request, params: str = "") -> str:
+    """Landing URL including base path for path-based deployment."""
+    base = get_base_url(request)
+    suffix = "?" + params if params else ""
+    return f"{base}/{suffix}"
 from backend.services.youtube_web_auth import (
     get_authorization_url,
     exchange_code_for_credentials,
@@ -38,7 +45,7 @@ def auth_status(request: Request):
 def get_youtube_auth_url(request: Request):
     """Get YouTube OAuth URL for user to redirect to."""
     base_url = get_base_url(request)
-    redirect_uri = f"{base_url.rstrip('/')}/api/auth/youtube/callback"
+    redirect_uri = f"{base_url}/api/auth/youtube/callback"
     try:
         url, state = get_authorization_url(redirect_uri)
         request.session["oauth_state"] = state
@@ -54,20 +61,20 @@ def youtube_callback(request: Request, code: str = None, state: str = None, erro
     """OAuth callback - exchange code for credentials, store in session."""
     if error:
         # User denied or error - redirect to frontend with error
-        return RedirectResponse(url="/?error=auth_denied", status_code=302)
+        return RedirectResponse(url=_landing_url(request, "error=auth_denied"), status_code=302)
     if not code:
         raise HTTPException(status_code=400, detail="Missing authorization code")
 
     base_url = get_base_url(request)
-    redirect_uri = f"{base_url.rstrip('/')}/api/auth/youtube/callback"
+    redirect_uri = f"{base_url}/api/auth/youtube/callback"
 
     try:
         creds = exchange_code_for_credentials(code, redirect_uri)
         request.session["youtube_credentials"] = credentials_to_dict(creds)
         # Redirect to frontend (landing) - user is now signed in
-        return RedirectResponse(url="/?signed_in=1", status_code=302)
+        return RedirectResponse(url=_landing_url(request, "signed_in=1"), status_code=302)
     except Exception as e:
-        return RedirectResponse(url=f"/?error={str(e)[:100]}", status_code=302)
+        return RedirectResponse(url=_landing_url(request, f"error={str(e)[:80]}"), status_code=302)
 
 
 @router.post("/auth/logout")

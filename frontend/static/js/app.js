@@ -1,6 +1,6 @@
 /* Archive to YouTube - Web UI */
 
-const API = "/api";
+const API = "api";
 
 let authStatus = false;
 let previewData = null;
