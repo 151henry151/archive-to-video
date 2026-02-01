@@ -39,6 +39,11 @@ The Archive.org to YouTube uploader is a Python application that automates the c
 └─────────────────┘
 ```
 
+## Entry Points
+
+- **CLI** (`upload.py`): Invokes `src.main.ArchiveToYouTube.process_archive_url()` interactively (prompts for confirmation and publish).
+- **Web UI** (`run_web.py` → `backend.main`): FastAPI app serves the frontend and exposes `/api/auth`, `/api/preview`, `/api/process`, `/api/job/{id}`. Preview and process run the same `src` logic in background jobs; the frontend polls for progress and displays results. OAuth is handled via web flow (see [WEB_UI_SETUP.md](WEB_UI_SETUP.md)).
+
 ## Component Details
 
 ### 1. ArchiveScraper (`src/archive_scraper.py`)

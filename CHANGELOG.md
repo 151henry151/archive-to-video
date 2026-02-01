@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0-beta] - 2026-01-31
+
+### Added
+- **Web UI (beta)** – Browser-based interface alongside the CLI:
+  - FastAPI backend with session-based YouTube OAuth (web flow); sign in once per session.
+  - **Preview**: Enter archive.org URL → async preview job with real progress (fetch metadata, find audio, get durations per track). Poll `/api/preview/job/{id}` for step and progress bar.
+  - **Process**: Start upload job → background run of same CLI workflow; poll `/api/job/{id}` for live progress (download, video creation, upload, playlist).
+  - **Review**: After completion, link to private playlist; optional “Make public” to set videos and playlist to public via API.
+  - Frontend: single-page app (landing, preview loading, preview, processing, review, complete); determinate/indeterminate progress bars and step messages.
+  - Deploy: `python run_web.py` (port 18765) or Docker (`docker compose up`); path-based hosting supported via `BASE_URL` (see [WEB_UI_SETUP.md](WEB_UI_SETUP.md)).
+- **Documentation**: [WEB_UI_SETUP.md](WEB_UI_SETUP.md) for OAuth (Web client, redirect URIs), Docker, and env vars; [docs/YouTube-API-Quota-Request-Design.md](docs/YouTube-API-Quota-Request-Design.md) for quota extension requests.
+
+### Changed
+- Version set to **beta** again; Web UI is not fully tested in all environments. CLI remains the recommended path for production use.
+- Improved error when all YouTube uploads fail (e.g. quota exceeded): now raises a clear message with failure count and “likely due to YouTube API quota exceeded” instead of generic “Process returned no result”.
+
+### Fixed
+- When no videos were uploaded (e.g. quota), the process no longer returns `None` silently; it now raises a descriptive error so the UI shows the real cause.
+
 ## [1.0.0] - 2026-01-31
 
 ### Changed

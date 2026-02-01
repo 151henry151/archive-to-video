@@ -1,6 +1,6 @@
 # Archive.org to YouTube Uploader
 
-A Python tool that automatically downloads audio tracks from archive.org, creates videos with static background images, and uploads them to YouTube with proper metadata and playlists.
+A Python tool that automatically downloads audio tracks from archive.org, creates videos with static background images, and uploads them to YouTube with proper metadata and playlists. Use it from the **command line** or the **Web UI** (beta).
 
 ## Prerequisites
 
@@ -71,13 +71,15 @@ When you run the tool for the first time, a browser window will open for authent
 
 ## Usage
 
+### Command line (CLI)
+
 Run the tool with an archive.org URL:
 
 ```bash
 python upload.py https://archive.org/details/lf2007-11-21.a
 ```
 
-### Command Line Options
+#### Command line options
 
 ```bash
 python upload.py <URL> [--temp-dir DIR] [--credentials PATH]
@@ -143,17 +145,27 @@ This is by design. Videos start as private. You can make them public through the
 archive-to-yt/
 ├── README.md              # This file
 ├── ARCHITECTURE.md        # Technical documentation
+├── WEB_UI_SETUP.md        # Web UI OAuth, Docker, and deployment
 ├── requirements.txt       # Python dependencies
+├── upload.py              # CLI entry point
+├── run_web.py             # Web UI server entry point
 ├── config/                # Configuration directory
 │   ├── client_secrets.json  # YouTube API credentials (you provide)
-│   └── client_token.json    # Saved OAuth token (auto-generated)
-├── src/                   # Source code
-│   ├── main.py           # Main entry point
+│   └── client_token.json    # Saved OAuth token (CLI; auto-generated)
+├── src/                   # Core logic (shared by CLI and Web UI)
+│   ├── main.py
 │   ├── archive_scraper.py
 │   ├── audio_downloader.py
 │   ├── video_creator.py
 │   ├── youtube_uploader.py
 │   └── metadata_formatter.py
+├── backend/               # Web UI API (FastAPI)
+│   ├── main.py
+│   └── api/               # auth, preview, process
+├── frontend/              # Web UI (HTML, CSS, JS)
+├── docs/                  # Additional documentation (e.g. quota request)
+├── Dockerfile             # Web UI container
+├── docker-compose.yml
 └── temp/                  # Temporary files (auto-cleaned)
 ```
 
