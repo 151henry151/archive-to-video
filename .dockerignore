@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temp and local
+temp/
+*.log
+config/client_token.json
+config/client_secrets.json
+
+# Docs (keep in image but optional)
+PLAN*.md
+PROMPT.md
+
+# Test
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,0 +1,20 @@
+# Archive to YouTube - Web UI
+# Run: docker compose up --build
+# Access: http://localhost:18765
+
+services:
+  archive-to-yt:
+    build: .
+    ports:
+      - "18765:18765"
+    environment:
+      - PORT=18765
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - BASE_URL=${BASE_URL:-http://localhost:18765}
+    volumes:
+      - ./config:/app/config:ro
+      - archive-to-yt-temp:/app/temp
+    restart: unless-stopped
+
+volumes:
+  archive-to-yt-temp:

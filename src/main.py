@@ -8,7 +8,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any
 
 # Handle imports for both direct execution and module import
 try:
@@ -42,14 +42,16 @@ class ArchiveToYouTube:
     def __init__(
         self,
         temp_dir: str = "temp",
-        credentials_path: str = "config/client_secrets.json"
+        credentials_path: str = "config/client_secrets.json",
+        credentials: Optional[Any] = None,
     ):
         """
         Initialize the uploader.
 
         Args:
             temp_dir: Directory for temporary files
-            credentials_path: Path to YouTube API credentials
+            credentials_path: Path to YouTube API credentials (used when credentials is None)
+            credentials: Optional Credentials object (for web OAuth); if provided, used instead of file
         """
         self.temp_dir = Path(temp_dir)
         self.temp_dir.mkdir(exist_ok=True)
@@ -57,7 +59,10 @@ class ArchiveToYouTube:
         self.audio_downloader = AudioDownloader(str(self.temp_dir))
         self.video_creator = VideoCreator(str(self.temp_dir))
         self.metadata_formatter = MetadataFormatter()
-        self.youtube_uploader = YouTubeUploader(credentials_path)
+        self.youtube_uploader = YouTubeUploader(
+            credentials_path=credentials_path,
+            credentials=credentials,
+        )
 
         logger.info("Archive to YouTube uploader initialized")
 
@@ -168,14 +173,27 @@ class ArchiveToYouTube:
         logger.info(f"  Playlist: {playlist_title}")
         logger.info(f"{'='*80}\n")
 
-    def process_archive_url(self, url: str) -> None:
+    def process_archive_url(
+        self, url: str, interactive: bool = True, progress_callback=None
+    ) -> Optional[dict]:
         """
         Process an archive.org URL and upload to YouTube.
 
         Args:
             url: Archive.org detail page URL
+            interactive: If False, skip preview/confirmation prompts (for web API)
+            progress_callback: Optional callable(message, current, total) for progress
+
+        Returns:
+            When interactive=False: dict with playlist_id, playlist_url, video_ids, etc.
+            When interactive=True: None
         """
         logger.info(f"Processing archive.org URL: {url}")
+
+        def _progress(msg: str, current: int = 0, total: int = 0):
+            logger.info(msg)
+            if progress_callback:
+                progress_callback(msg, current, total)
 
         try:
             # Step 1: Scrape metadata
@@ -202,21 +220,21 @@ class ArchiveToYouTube:
             identifier = metadata.get('identifier', 'unknown')
             logger.info(f"Using identifier '{identifier}' for file naming (resume capability enabled)")
             
-            # DRY-RUN PREVIEW: Show what will be uploaded (before any downloads)
-            logger.info(f"\n{'='*80}")
-            logger.info("DRY-RUN PREVIEW")
-            logger.info(f"{'='*80}")
-            self._preview_upload(metadata, track_audio)
-            
-            # Ask for user confirmation
-            logger.info("Please review the preview above.")
-            response = input("\nProceed with download, video creation, and upload? (yes/no): ").strip().lower()
-            
-            if response not in ['yes', 'y']:
-                logger.info("Aborted by user. No files downloaded or uploaded.")
-                return
-            
-            logger.info("\nProceeding with download and upload...\n")
+            # DRY-RUN PREVIEW and confirmation (interactive mode only)
+            if interactive:
+                logger.info(f"\n{'='*80}")
+                logger.info("DRY-RUN PREVIEW")
+                logger.info(f"{'='*80}")
+                self._preview_upload(metadata, track_audio)
+
+                logger.info("Please review the preview above.")
+                response = input("\nProceed with download, video creation, and upload? (yes/no): ").strip().lower()
+
+                if response not in ['yes', 'y']:
+                    logger.info("Aborted by user. No files downloaded or uploaded.")
+                    return None
+
+                logger.info("\nProceeding with download and upload...\n")
             
             # Check for existing files (resume capability)
             existing_audio = self.audio_downloader.find_existing_files(identifier)
@@ -629,44 +647,41 @@ class ArchiveToYouTube:
                     logger.info(f"Total: {len(all_video_ids)} videos in playlist")
                     logger.info(f"Playlist: {playlist_url}")
                     logger.info(f"Videos and playlist are currently set to PRIVATE")
-                    
-                    # Offer to review and make public
-                    logger.info(f"\n{'='*60}")
-                    logger.info("Review and Publish")
-                    logger.info(f"{'='*60}")
-                    logger.info(f"Please review your playlist at: {playlist_url}")
-                    logger.info("")
-                    
-                    while True:
-                        try:
-                            response = input("Would you like to make all videos and the playlist PUBLIC? (yes/no): ").strip().lower()
-                            if response in ['yes', 'y']:
-                                logger.info("Making videos and playlist public...")
-                                
-                                # Make all videos public (both new and existing)
-                                success_count = self.youtube_uploader.make_videos_public(all_video_ids)
-                                
-                                # Make playlist public
-                                if self.youtube_uploader.update_playlist_privacy(playlist_id, 'public'):
-                                    logger.info(f"\n{'='*60}")
-                                    logger.info("PUBLISHED!")
-                                    logger.info(f"{'='*60}")
-                                    logger.info(f"All {success_count} videos and the playlist are now PUBLIC")
-                                    logger.info(f"Public playlist: {playlist_url}")
+
+                    if interactive:
+                        # Offer to review and make public
+                        logger.info(f"\n{'='*60}")
+                        logger.info("Review and Publish")
+                        logger.info(f"{'='*60}")
+                        logger.info(f"Please review your playlist at: {playlist_url}")
+                        logger.info("")
+
+                        while True:
+                            try:
+                                response = input("Would you like to make all videos and the playlist PUBLIC? (yes/no): ").strip().lower()
+                                if response in ['yes', 'y']:
+                                    logger.info("Making videos and playlist public...")
+                                    success_count = self.youtube_uploader.make_videos_public(all_video_ids)
+                                    if self.youtube_uploader.update_playlist_privacy(playlist_id, 'public'):
+                                        logger.info(f"All {success_count} videos and the playlist are now PUBLIC")
+                                    else:
+                                        logger.warning("Videos were made public, but playlist update failed")
+                                    break
+                                elif response in ['no', 'n']:
+                                    logger.info("Keeping videos and playlist as PRIVATE")
+                                    break
                                 else:
-                                    logger.warning("Videos were made public, but playlist update failed")
-                                    logger.warning("You may need to make the playlist public manually in YouTube Studio")
+                                    logger.info("Please enter 'yes' or 'no'")
+                            except (EOFError, KeyboardInterrupt):
+                                logger.info("\nKeeping videos and playlist as PRIVATE")
                                 break
-                            elif response in ['no', 'n']:
-                                logger.info("Keeping videos and playlist as PRIVATE")
-                                logger.info("You can change privacy settings later in YouTube Studio")
-                                break
-                            else:
-                                logger.info("Please enter 'yes' or 'no'")
-                        except (EOFError, KeyboardInterrupt):
-                            logger.info("\nKeeping videos and playlist as PRIVATE")
-                            logger.info("You can change privacy settings later in YouTube Studio")
-                            break
+                    else:
+                        # Non-interactive: return result for web API
+                        return {
+                            "playlist_id": playlist_id,
+                            "playlist_url": playlist_url,
+                            "video_ids": all_video_ids,
+                        }
                 else:
                     logger.error("No playlist available")
 

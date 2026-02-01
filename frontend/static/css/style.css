@@ -1,0 +1,168 @@
+/* Archive to YouTube - Web UI */
+:root {
+  --bg: #0f0f12;
+  --surface: #1a1a1f;
+  --border: #2a2a32;
+  --text: #e8e8ed;
+  --text-muted: #888;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --success: #22c55e;
+  --error: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.input-group {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input[type="url"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: #3a3a42;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mt-2 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 1rem; }
+
+.error {
+  color: var(--error);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.success {
+  color: var(--success);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.progress {
+  margin: 1rem 0;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.hidden { display: none !important; }

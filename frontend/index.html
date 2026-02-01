@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archive to YouTube</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Archive to YouTube</h1>
+
+    <!-- Landing -->
+    <div id="landing" class="card">
+      <div class="input-group">
+        <label for="url">Archive.org URL</label>
+        <input type="url" id="url" placeholder="https://archive.org/details/...">
+      </div>
+      <div id="landing-error" class="error hidden"></div>
+      <div class="mt-2">
+        <button id="btn-signin" class="btn btn-secondary">Sign in with YouTube</button>
+        <span id="signed-in" class="success hidden">Signed in ✓</span>
+      </div>
+      <div class="mt-2">
+        <button id="btn-preview" class="btn btn-primary">Preview</button>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="preview" class="hidden">
+      <div class="card">
+        <h2 id="preview-title"></h2>
+        <p id="preview-meta" class="text-muted"></p>
+        <p id="preview-playlist"></p>
+        <table>
+          <thead>
+            <tr><th>#</th><th>Track</th><th>Video Title</th><th>Duration</th></tr>
+          </thead>
+          <tbody id="preview-tracks"></tbody>
+        </table>
+        <p id="preview-total"></p>
+        <div class="mt-2">
+          <button id="btn-back" class="btn btn-secondary">Back</button>
+          <button id="btn-proceed" class="btn btn-primary">Proceed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processing -->
+    <div id="processing" class="hidden">
+      <div class="card">
+        <h2>Processing...</h2>
+        <div class="progress">
+          <div class="progress-bar"><div id="progress-fill" class="progress-bar-fill" style="width:0%"></div></div>
+          <div id="progress-text" class="progress-text">Starting...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review -->
+    <div id="review" class="hidden">
+      <div class="card">
+        <h2>Review your playlist</h2>
+        <p>Videos have been uploaded as <strong>private</strong>. Please review:</p>
+        <p><a id="playlist-link" href="#" target="_blank">Open playlist on YouTube</a></p>
+        <p class="mt-2">
+          <button id="btn-make-public" class="btn btn-primary">Make videos and playlist public</button>
+        </p>
+      </div>
+    </div>
+
+    <!-- Complete -->
+    <div id="complete" class="hidden">
+      <div class="card">
+        <h2>Published!</h2>
+        <p><a id="public-playlist-link" href="#" target="_blank">View public playlist</a></p>
+        <button id="btn-start-over" class="btn btn-secondary mt-2">Start over</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

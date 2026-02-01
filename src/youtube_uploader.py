@@ -28,69 +28,84 @@ SCOPES = [
 class YouTubeUploader:
     """Handles YouTube video uploads and playlist creation."""
 
-    def __init__(self, credentials_path: str = "config/client_secrets.json"):
+    def __init__(
+        self,
+        credentials_path: str = "config/client_secrets.json",
+        credentials: Optional[Credentials] = None,
+    ):
         """
         Initialize YouTube uploader.
 
         Args:
-            credentials_path: Path to OAuth2 credentials JSON file
+            credentials_path: Path to OAuth2 credentials JSON file (used when credentials is None)
+            credentials: Optional Credentials object (for web OAuth flow); if provided, used instead of file
         """
         self.credentials_path = Path(credentials_path)
         self.token_path = self.credentials_path.parent / "client_token.json"
         self.youtube = None
-        self._authenticate()
+        self._authenticate(credentials)
 
-    def _authenticate(self) -> None:
+    def _authenticate(self, credentials: Optional[Credentials] = None) -> None:
         """Authenticate with YouTube API using OAuth2."""
-        creds = None
+        creds = credentials
 
-        # Load existing token if available
-        if self.token_path.exists():
-            logger.info("Loading existing YouTube API credentials...")
-            try:
-                creds = Credentials.from_authorized_user_file(str(self.token_path), SCOPES)
-                # Check if token has all required scopes
-                if creds.scopes and set(creds.scopes) != set(SCOPES):
-                    logger.warning(
-                        "Existing token has different scopes. Re-authentication required for playlist creation."
-                    )
-                    logger.warning(f"Current scopes: {creds.scopes}")
-                    logger.warning(f"Required scopes: {SCOPES}")
-                    logger.warning("Deleting old token file to force re-authentication...")
-                    self.token_path.unlink()
-                    creds = None
-            except Exception as e:
-                logger.warning(f"Could not load existing credentials: {e}")
-
-        # If there are no (valid) credentials available, let the user log in
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                logger.info("Refreshing expired YouTube API credentials...")
+        # If credentials were passed (e.g. from web OAuth), use them
+        if creds is not None:
+            if creds.expired and creds.refresh_token:
                 try:
                     creds.refresh(Request())
                 except Exception as e:
                     logger.warning(f"Could not refresh credentials: {e}")
                     creds = None
+        else:
+            # Load existing token if available
+            creds = None
+            if self.token_path.exists():
+                logger.info("Loading existing YouTube API credentials...")
+                try:
+                    creds = Credentials.from_authorized_user_file(str(self.token_path), SCOPES)
+                    # Check if token has all required scopes
+                    if creds.scopes and set(creds.scopes) != set(SCOPES):
+                        logger.warning(
+                            "Existing token has different scopes. Re-authentication required for playlist creation."
+                        )
+                        logger.warning(f"Current scopes: {creds.scopes}")
+                        logger.warning(f"Required scopes: {SCOPES}")
+                        logger.warning("Deleting old token file to force re-authentication...")
+                        self.token_path.unlink()
+                        creds = None
+                except Exception as e:
+                    logger.warning(f"Could not load existing credentials: {e}")
 
-            if not creds:
-                if not self.credentials_path.exists():
-                    raise FileNotFoundError(
-                        f"YouTube API credentials not found at {self.credentials_path}. "
-                        "Please follow the setup instructions in README.md to obtain credentials."
+            # If there are no (valid) credentials available, let the user log in
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    logger.info("Refreshing expired YouTube API credentials...")
+                    try:
+                        creds.refresh(Request())
+                    except Exception as e:
+                        logger.warning(f"Could not refresh credentials: {e}")
+                        creds = None
+
+                if not creds:
+                    if not self.credentials_path.exists():
+                        raise FileNotFoundError(
+                            f"YouTube API credentials not found at {self.credentials_path}. "
+                            "Please follow the setup instructions in README.md to obtain credentials."
+                        )
+
+                    logger.info("Starting OAuth2 flow for YouTube API...")
+                    logger.info("A browser window will open for authentication.")
+                    logger.info("Note: You'll need to grant permissions for both video uploads AND playlist management.")
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        str(self.credentials_path), SCOPES
                     )
+                    creds = flow.run_local_server(port=0)
 
-                logger.info("Starting OAuth2 flow for YouTube API...")
-                logger.info("A browser window will open for authentication.")
-                logger.info("Note: You'll need to grant permissions for both video uploads AND playlist management.")
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    str(self.credentials_path), SCOPES
-                )
-                creds = flow.run_local_server(port=0)
-
-            # Save credentials for next run
-            logger.info(f"Saving credentials to {self.token_path}")
-            with open(self.token_path, 'w') as token:
-                token.write(creds.to_json())
+                # Save credentials for next run
+                logger.info(f"Saving credentials to {self.token_path}")
+                with open(self.token_path, 'w') as token:
+                    token.write(creds.to_json())
 
         # Build YouTube API service
         try:
