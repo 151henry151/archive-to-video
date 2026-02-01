@@ -317,6 +317,7 @@ class ArchiveToYouTube:
             
             # Step 5: Process each track
             uploaded_video_ids = []
+            upload_failures = []  # (track_index, error_msg) for failed YouTube uploads
             track_to_video_id_map = {}  # Map track index to video ID (for correct ordering)
             downloaded_audio_files = []
             created_video_files = []
@@ -483,9 +484,11 @@ class ArchiveToYouTube:
                         successfully_uploaded_videos.append(video_path)  # Track for final cleanup
 
                     except Exception as e:
+                        err_msg = str(e)
                         logger.error(f"Failed to process track {i}: {e}")
                         logger.error("Continuing with next track...")
                         logger.info("Audio and video files preserved for resume capability")
+                        upload_failures.append((i + 1, err_msg))
                         continue
 
                 # Step 6: Check for existing playlist or create new one
@@ -595,8 +598,23 @@ class ArchiveToYouTube:
                                 current_count += 1
                             playlist_id = existing_playlist_id
                     else:
-                        logger.error("No videos to add to playlist")
-                        playlist_id = None
+                        # No videos were successfully uploaded - surface a helpful error
+                        if upload_failures:
+                            last_err = upload_failures[-1][1] if upload_failures else "unknown"
+                            if "quota" in last_err.lower() or "403" in last_err:
+                                raise ValueError(
+                                    f"No videos were uploaded to YouTube. All {len(upload_failures)} upload(s) failed, "
+                                    "likely due to YouTube API quota exceeded. Check your daily quota in Google Cloud Console "
+                                    "or try again tomorrow. Last error: " + last_err
+                                )
+                            raise ValueError(
+                                f"No videos were uploaded to YouTube. All {len(upload_failures)} upload(s) failed. "
+                                f"Last error: {last_err}"
+                            )
+                        raise ValueError(
+                            "No videos were uploaded to YouTube. Uploads may have been skipped or failed. "
+                            "Check server logs for details."
+                        )
 
                 # Step 7: Review and publish (if we have a playlist)
                 if playlist_id:
