@@ -2,6 +2,9 @@
 
 A Python tool that automatically downloads audio tracks from archive.org, creates videos with static background images, and uploads them to YouTube with proper metadata and playlists. Use it from the **command line** or the **Web UI** (beta).
 
+- **Home page:** [hromp.com/archive-to-yt](https://hromp.com/archive-to-yt/)
+- **Live Web UI (beta):** [hromp.com/archive-to-yt/app](https://hromp.com/archive-to-yt/app/) — try it in your browser
+
 ## Prerequisites
 
 - Python 3.8 or higher
@@ -99,6 +102,84 @@ python upload.py <URL> [--temp-dir DIR] [--credentials PATH]
 6. **Upload**: Uploads videos to YouTube (skips if already uploaded)
 7. **Create playlist**: Creates or updates YouTube playlist with all tracks
 8. **Review**: Offers option to make videos and playlist public
+
+### Web UI (beta)
+
+A browser-based interface with the same workflow: sign in with YouTube, enter an archive.org URL, preview, then process. Uploads run in the background with live progress; you can review the private playlist and optionally make it public.
+
+**Try it:** [Live Web UI](https://hromp.com/archive-to-yt/app/) (beta) | [Home page](https://hromp.com/archive-to-yt/)
+
+#### Web UI setup (OAuth and config)
+
+The Web UI uses a **Web application** OAuth client (not the Desktop client used by the CLI). You need both YouTube Data API v3 and a Web OAuth client:
+
+1. **Google Cloud Console** → APIs & Services → **Credentials**
+2. Create (or edit) an **OAuth 2.0 Client ID**
+3. **Application type:** **Web application**
+4. **Authorized redirect URIs** — add the callback URL for where you will run the app:
+   - Local: `http://localhost:18765/api/auth/youtube/callback`
+   - Your domain: `https://your-domain.com/api/auth/youtube/callback`
+   - Path-based (e.g. hromp.com): `https://hromp.com/archive-to-yt/app/api/auth/youtube/callback`
+5. Download the JSON and save it as **`config/client_secrets.json`**
+
+You can have both Desktop (CLI) and Web (Web UI) client IDs in the same Google Cloud project; the same `client_secrets.json` file can include both. The app uses the correct client based on how it’s run.
+
+#### Running the Web UI locally
+
+1. Install dependencies (see [Installation](#installation)) and create `config/client_secrets.json` (see above).
+2. Set a session secret (required for cookies):
+   ```bash
+   export SECRET_KEY="your-secret-key-for-sessions"
+   ```
+3. Start the server:
+   ```bash
+   python run_web.py
+   ```
+4. Open **http://localhost:18765** in your browser.
+
+Default port is **18765**; override with `PORT=8080 python run_web.py` if needed.
+
+#### Running the Web UI with Docker
+
+The Web UI runs in a container that includes Python, ffmpeg, and the app. You must provide credentials and a session secret via the host.
+
+1. Create **`config/client_secrets.json`** on your machine (see [Web UI setup](#web-ui-setup-oauth-and-config) above).
+2. Set environment variables and start:
+   ```bash
+   export SECRET_KEY="your-secret-key"
+   docker compose up --build
+   ```
+3. Open **http://localhost:18765**.
+
+**What the container does:**
+
+- **Image:** Built from `Dockerfile` (Python 3.12, ffmpeg, app dependencies).
+- **Port:** **18765** (mapped to host).
+- **Volumes:**
+  - `./config` → `/app/config` (read-only) — so `config/client_secrets.json` is available inside the container.
+  - Named volume `archive-to-yt-temp` → `/app/temp` — temporary downloads and videos (persist across restarts for resume).
+- **Environment:** Set `SECRET_KEY` (required). Optionally set `PORT`, `BASE_URL` (see below).
+
+**Example with custom port and base URL (e.g. behind a reverse proxy):**
+
+```bash
+export SECRET_KEY="your-secret-key"
+export BASE_URL="https://your-domain.com/archive-to-yt"
+docker compose up --build
+```
+
+For **path-based deployment** (app served under a path like `/archive-to-yt/app/`), set `BASE_URL` to the full public URL and add that callback to OAuth redirect URIs. See [WEB_UI_SETUP.md](WEB_UI_SETUP.md) for details.
+
+#### Web UI environment variables
+
+| Variable    | Default     | Description |
+|------------|-------------|-------------|
+| `PORT`     | 18765       | Port the server listens on |
+| `HOST`     | 0.0.0.0     | Host to bind to |
+| `SECRET_KEY` | *(none)*  | **Required.** Secret for signing session cookies |
+| `BASE_URL` | *(none)*   | Public URL of the app (for OAuth redirects when behind a proxy or path) |
+
+The Web UI is **beta** and not fully tested in all environments. For production use, the CLI is recommended.
 
 ## Features
 
