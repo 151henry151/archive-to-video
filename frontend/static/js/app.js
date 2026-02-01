@@ -35,8 +35,10 @@ const publicPlaylistLink = document.getElementById("public-playlist-link");
 const btnStartOver = document.getElementById("btn-start-over");
 
 function show(section) {
-  [landing, preview, processing, review, complete].forEach((el) => el.classList.add("hidden"));
-  section.classList.remove("hidden");
+  [landing, previewLoading, preview, processing, review, complete].forEach((el) => {
+    if (el) el.classList.add("hidden");
+  });
+  if (section) section.classList.remove("hidden");
 }
 
 function showError(el, msg) {
@@ -66,6 +68,22 @@ async function handleSignIn() {
   if (data.url) window.location.href = data.url;
 }
 
+const PREVIEW_STATUS_MESSAGES = [
+  "Fetching metadata from archive.org...",
+  "Finding tracks and audio files...",
+  "Getting track durations (this is the slowest step)...",
+  "Preparing preview...",
+];
+
+function startPreviewStatusCycle() {
+  let i = 0;
+  previewLoadingStatus.textContent = PREVIEW_STATUS_MESSAGES[0];
+  return setInterval(() => {
+    i = (i + 1) % PREVIEW_STATUS_MESSAGES.length;
+    previewLoadingStatus.textContent = PREVIEW_STATUS_MESSAGES[i];
+  }, 3000);
+}
+
 async function handlePreview() {
   const url = urlInput.value.trim();
   if (!url) {
@@ -77,8 +95,9 @@ async function handlePreview() {
     return;
   }
   showError(landingError, "");
-  btnPreview.disabled = true;
-  previewLoading.classList.remove("hidden");
+  // Immediately show loading state so user knows something is happening
+  show(previewLoading);
+  const statusInterval = startPreviewStatusCycle();
   try {
     const res = await fetch(`${API}/preview`, {
       method: "POST",
@@ -91,13 +110,13 @@ async function handlePreview() {
       throw new Error(err.detail || res.statusText);
     }
     previewData = await res.json();
+    clearInterval(statusInterval);
     renderPreview();
     show(preview);
   } catch (e) {
+    clearInterval(statusInterval);
+    show(landing);
     showError(landingError, e.message);
-  } finally {
-    btnPreview.disabled = false;
-    previewLoading.classList.add("hidden");
   }
 }
 
