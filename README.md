@@ -1,9 +1,9 @@
 # Archive.org to YouTube Uploader
 
-A Python tool that automatically downloads audio tracks from archive.org, creates videos with static background images, and uploads them to YouTube with proper metadata and playlists. Use it from the **command line** or the **Web UI** (beta).
+A Python tool that automatically downloads audio tracks from archive.org, creates videos with static background images, and uploads them to YouTube with proper metadata and playlists. Use it from the **command line** or the **Web UI**.
 
 - **Home page:** [hromp.com/archive-to-yt](https://hromp.com/archive-to-yt/)
-- **Live Web UI (beta):** [hromp.com/archive-to-yt/app](https://hromp.com/archive-to-yt/app/) — try it in your browser
+- **Live Web UI:** [hromp.com/archive-to-yt/app](https://hromp.com/archive-to-yt/app/) — try it in your browser
 
 ## Prerequisites
 
@@ -103,11 +103,11 @@ python upload.py <URL> [--temp-dir DIR] [--credentials PATH]
 7. **Create playlist**: Creates or updates YouTube playlist with all tracks
 8. **Review**: Offers option to make videos and playlist public
 
-### Web UI (beta)
+### Web UI
 
 A browser-based interface with the same workflow: sign in with YouTube, enter an archive.org URL, preview, then process. Uploads run in the background with live progress; you can review the private playlist and optionally make it public.
 
-**Try it:** [Live Web UI](https://hromp.com/archive-to-yt/app/) (beta) | [Home page](https://hromp.com/archive-to-yt/)
+**Try it:** [Live Web UI](https://hromp.com/archive-to-yt/app/) | [Home page](https://hromp.com/archive-to-yt/)
 
 #### Web UI setup (OAuth and config)
 
@@ -178,8 +178,6 @@ For **path-based deployment** (app served under a path like `/archive-to-yt/app/
 | `HOST`     | 0.0.0.0     | Host to bind to |
 | `SECRET_KEY` | *(none)*  | **Required.** Secret for signing session cookies |
 | `BASE_URL` | *(none)*   | Public URL of the app (for OAuth redirects when behind a proxy or path) |
-
-The Web UI is **beta** and not fully tested in all environments. For production use, the CLI is recommended.
 
 ## Features
 

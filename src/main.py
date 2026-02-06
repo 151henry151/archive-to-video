@@ -174,7 +174,12 @@ class ArchiveToYouTube:
         logger.info(f"{'='*80}\n")
 
     def process_archive_url(
-        self, url: str, interactive: bool = True, progress_callback=None
+        self,
+        url: str,
+        interactive: bool = True,
+        progress_callback=None,
+        initial_privacy: str = "private",
+        web_overrides: Optional[dict] = None,
     ) -> Optional[dict]:
         """
         Process an archive.org URL and upload to YouTube.
@@ -183,12 +188,23 @@ class ArchiveToYouTube:
             url: Archive.org detail page URL
             interactive: If False, skip preview/confirmation prompts (for web API)
             progress_callback: Optional callable(message, current, total) for progress
+            initial_privacy: For web API: 'private', 'unlisted', or 'public' for uploads and playlist
+            web_overrides: Optional dict with playlist_title, playlist_description, and tracks
+                          (list of {number, video_title, video_description}) to override defaults
 
         Returns:
             When interactive=False: dict with playlist_id, playlist_url, video_ids, etc.
             When interactive=True: None
         """
         logger.info(f"Processing archive.org URL: {url}")
+        if web_overrides:
+            track_overrides_map = {
+                int(t["number"]): t
+                for t in web_overrides.get("tracks", [])
+                if "number" in t
+            }
+        else:
+            track_overrides_map = {}
 
         def _progress(msg: str, current: int = 0, total: int = 0):
             logger.info(msg)
@@ -454,7 +470,8 @@ class ArchiveToYouTube:
                             track_info_clean,
                             metadata
                         )
-                        
+                        if track_num in track_overrides_map and track_overrides_map[track_num].get("video_description") is not None:
+                            video_description = (track_overrides_map[track_num]["video_description"] or "").strip() or video_description
                         # Final validation of description
                         if not video_description or not video_description.strip():
                             logger.warning(f"Generated empty description for track {track_num}, using fallback")
@@ -492,10 +509,13 @@ class ArchiveToYouTube:
                         continue
 
                 # Step 6: Check for existing playlist or create new one
-                playlist_title = self.metadata_formatter.format_playlist_title(metadata)
-                playlist_description = self.metadata_formatter.format_playlist_description(
-                    metadata,
-                    tracks
+                playlist_title = (
+                    (web_overrides or {}).get("playlist_title") or
+                    self.metadata_formatter.format_playlist_title(metadata)
+                )
+                playlist_description = (
+                    (web_overrides or {}).get("playlist_description") or
+                    self.metadata_formatter.format_playlist_description(metadata, tracks)
                 )
                 
                 # Check if playlist already exists
@@ -578,7 +598,8 @@ class ArchiveToYouTube:
                         playlist_id = self.youtube_uploader.create_playlist(
                             playlist_title,
                             playlist_description,
-                            uploaded_video_ids
+                            uploaded_video_ids,
+                            privacy_status=initial_privacy,
                         )
                         
                         # If we have an existing playlist and new videos, add them
@@ -673,7 +694,11 @@ class ArchiveToYouTube:
                         logger.info(f"Found {len(existing_videos)} existing videos")
                     logger.info(f"Total: {len(all_video_ids)} videos in playlist")
                     logger.info(f"Playlist: {playlist_url}")
-                    logger.info(f"Videos and playlist are currently set to PRIVATE")
+                    if not interactive and initial_privacy and initial_privacy != "private":
+                        logger.info(f"Setting playlist visibility to {initial_privacy.upper()}")
+                        self.youtube_uploader.update_playlist_privacy(playlist_id, initial_privacy)
+                    elif initial_privacy == "private" or not initial_privacy:
+                        logger.info(f"Videos and playlist are currently set to PRIVATE")
 
                     if interactive:
                         # Offer to review and make public

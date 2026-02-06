@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Archive to YouTube</title>
+  <link rel="stylesheet" href="static/css/style.css">
+  <style>
+    .legal-page { max-width: 720px; margin: 0 auto; padding: 2rem 1rem; }
+    .legal-page h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    .legal-page h2 { font-size: 1.1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    .legal-page p, .legal-page li { color: var(--text-muted); line-height: 1.6; margin-bottom: 0.75rem; }
+    .legal-page a { color: var(--accent); }
+    .legal-page ul { margin-left: 1.5rem; }
+    .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="legal-page">
+    <a href=".." class="back-link">← Back to Archive to YouTube</a>
+    <h1>Privacy Policy</h1>
+    <p><strong>Last updated:</strong> January 2026</p>
+
+    <p>This Privacy Policy describes how the Archive to YouTube application (“App”) handles information when you use the App to upload content to YouTube.</p>
+
+    <h2>1. Use of YouTube API Services</h2>
+    <p>This App uses <strong>YouTube API Services</strong> to let you sign in with your Google account, upload videos to your YouTube channel, and create or update playlists. By using the App, you are also subject to the <a href="https://www.google.com/policies/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> (<a href="https://www.google.com/policies/privacy" target="_blank" rel="noopener">http://www.google.com/policies/privacy</a>).</p>
+
+    <h2>2. Information We Access, Collect, and Use</h2>
+    <p>When you use the App:</p>
+    <ul>
+      <li><strong>Account and auth:</strong> To sign you in, we use Google OAuth. We do not store your Google password. We store a session (e.g. in a cookie) so you stay signed in; that session holds access and refresh tokens provided by Google to upload and manage content on your behalf.</li>
+      <li><strong>API Data:</strong> We use YouTube API Services to create and update videos and playlists (titles, descriptions, privacy status) on your channel. We do not sell or share this data with third parties. Data sent to YouTube (e.g. video titles and descriptions) is processed by Google according to the Google Privacy Policy.</li>
+      <li><strong>Archive.org URL and metadata:</strong> When you enter an archive.org URL, we fetch public metadata and audio from archive.org to generate a preview and to create videos. We do not store that URL or metadata longer than needed to complete your upload job.</li>
+    </ul>
+
+    <h2>3. How We Use and Share Your Information</h2>
+    <p>We use the information above only to operate the App: to authenticate you, to run preview and upload jobs you start, and to set titles, descriptions, and privacy for your videos and playlists. We do not use your data for advertising or share it with external parties for marketing. Session and token data is used only to call YouTube API on your behalf and is not shared with third parties except as needed to use Google’s services (e.g. OAuth and YouTube API).</p>
+
+    <h2>4. Storage and Technology on Your Device</h2>
+    <p>The App stores or accesses information on your device or browser in the following ways:</p>
+    <ul>
+      <li><strong>Cookies / session storage:</strong> We use session cookies (or similar technology) to keep you signed in and to maintain your session. These are required for the sign-in and upload flow. You can clear cookies in your browser to end your session.</li>
+    </ul>
+
+    <h2>5. Refreshing, Storing, and Deleting API Data</h2>
+    <p>We do not cache or store YouTube API Data (e.g. video or playlist metadata from YouTube) for longer than needed to complete a single user action:</p>
+    <ul>
+      <li><strong>Refresh:</strong> We do not periodically refresh API Data. We call the YouTube API only when you use the App (e.g. when you run a preview, start an upload, or change privacy). We do not store copies of your YouTube content (titles, descriptions, video IDs) after the request completes.</li>
+      <li><strong>Storage:</strong> We store only OAuth access and refresh tokens in your server-side session so you can stay signed in. Session data is temporary and is cleared when you sign out or when the session expires (e.g. after a period of inactivity). Upload job status (e.g. progress and result) is held in memory only for the duration of the job and for the short time you use the “review” and “make public” features; we do not retain it long term.</li>
+      <li><strong>Deletion:</strong> When you sign out, we clear your session. You can revoke the App’s access to your Google account at any time (see section 6). We do not retain API Data after that; we have no separate retention schedule because we do not store API Data beyond the life of the session and the in-memory job.</li>
+    </ul>
+
+    <h2>6. Deleting Data and Revoking Access</h2>
+    <p>You can revoke the App’s access to your YouTube/Google account and request that we stop using your data as follows:</p>
+    <ul>
+      <li><strong>Revoke access:</strong> Go to the Google security settings page for third-party apps: <a href="https://myaccount.google.com/connections?filters=3,4&hl=en" target="_blank" rel="noopener">https://myaccount.google.com/connections?filters=3,4&hl=en</a>. Find “Archive to YouTube” (or the name of this app) and remove access. After that, we can no longer access your YouTube channel via the API.</li>
+      <li><strong>Session data:</strong> Sign out using the “Sign out” button in the App to clear your session. Server-side session data is typically removed when the session expires (e.g. after a period of inactivity). We do not retain upload job data longer than needed for the job to complete and for you to use the “review” and “make public” features.</li>
+    </ul>
+
+    <h2>7. Contact</h2>
+    <p>For questions about this Privacy Policy or your data, please use the <a href="https://github.com/151henry151/archive-to-yt" target="_blank" rel="noopener">project repository</a> (e.g. open an issue or contact the maintainers listed there).</p>
+  </div>
+</body>
+</html>

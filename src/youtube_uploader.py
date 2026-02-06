@@ -121,7 +121,8 @@ class YouTubeUploader:
         title: str,
         description: str,
         tags: Optional[List[str]] = None,
-        category_id: str = "10"  # Music category
+        category_id: str = "10",  # Music category
+        privacy_status: str = "private",
     ) -> str:
         """
         Upload a video to YouTube.
@@ -131,6 +132,7 @@ class YouTubeUploader:
             title: Video title
             description: Video description
             tags: Optional list of tags
+            privacy_status: private, unlisted, or public
             category_id: YouTube category ID (10 = Music)
 
         Returns:
@@ -223,7 +225,7 @@ class YouTubeUploader:
                 'categoryId': category_id
             },
             'status': {
-                'privacyStatus': 'private'  # Start as private, user can change later
+                'privacyStatus': privacy_status if privacy_status in ('private', 'unlisted', 'public') else 'private'
             }
         }
         

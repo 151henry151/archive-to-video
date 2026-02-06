@@ -10,6 +10,12 @@
   <div class="container">
     <h1>Archive to YouTube</h1>
 
+    <footer class="app-footer">
+      <a href="terms">Terms of Service</a>
+      <span aria-hidden="true"> · </span>
+      <a href="privacy">Privacy Policy</a>
+    </footer>
+
     <!-- Landing -->
     <div id="landing" class="card">
       <div class="input-group">
@@ -55,7 +61,39 @@
         <p id="preview-total"></p>
         <div class="mt-2">
           <button id="btn-back" class="btn btn-secondary">Back</button>
-          <button id="btn-proceed" class="btn btn-primary">Proceed</button>
+          <button id="btn-edit" class="btn btn-primary">Edit titles & visibility</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit titles & visibility (YouTube API compliance: user sets title, description, privacy) -->
+    <div id="edit" class="hidden">
+      <div class="card">
+        <h2>Set titles, descriptions & visibility</h2>
+        <p class="text-muted">Edit below as needed. Choose who can see your videos and playlist.</p>
+        <div class="input-group">
+          <label for="edit-playlist-title">Playlist title</label>
+          <input type="text" id="edit-playlist-title" class="full-width">
+        </div>
+        <div class="input-group">
+          <label for="edit-playlist-description">Playlist description</label>
+          <textarea id="edit-playlist-description" rows="4" class="full-width"></textarea>
+        </div>
+        <div class="input-group">
+          <label>Visibility (videos and playlist)</label>
+          <div class="privacy-options">
+            <label class="radio-label"><input type="radio" name="privacy" value="private" checked> Private</label>
+            <label class="radio-label"><input type="radio" name="privacy" value="unlisted"> Unlisted</label>
+            <label class="radio-label"><input type="radio" name="privacy" value="public"> Public</label>
+          </div>
+        </div>
+        <div class="edit-tracks-header">
+          <strong>Video titles and descriptions</strong>
+        </div>
+        <div id="edit-tracks" class="edit-tracks-list"></div>
+        <div class="mt-2">
+          <button id="btn-edit-back" class="btn btn-secondary">Back to preview</button>
+          <button id="btn-proceed" class="btn btn-primary">Proceed to upload</button>
         </div>
       </div>
     </div>
@@ -78,9 +116,9 @@
     <div id="review" class="hidden">
       <div class="card">
         <h2>Review your playlist</h2>
-        <p>Videos have been uploaded as <strong>private</strong>. Please review:</p>
+        <p id="review-message">Videos have been uploaded. Please review:</p>
         <p><a id="playlist-link" href="#" target="_blank">Open playlist on YouTube</a></p>
-        <p class="mt-2">
+        <p id="review-make-public-wrap" class="mt-2">
           <button id="btn-make-public" class="btn btn-primary">Make videos and playlist public</button>
         </p>
       </div>
@@ -94,6 +132,12 @@
         <button id="btn-start-over" class="btn btn-secondary mt-2">Start over</button>
       </div>
     </div>
+
+    <footer class="app-footer">
+      <a href="terms">Terms of Service</a>
+      <span aria-hidden="true"> · </span>
+      <a href="privacy">Privacy Policy</a>
+    </footer>
   </div>
 
   <script src="static/js/app.js"></script>

@@ -5,10 +5,12 @@ const API = "api";
 let authStatus = false;
 let previewData = null;
 let currentJobId = null;
+let chosenPrivacy = "private";
 
 // Elements
 const landing = document.getElementById("landing");
 const preview = document.getElementById("preview");
+const editSection = document.getElementById("edit");
 const processing = document.getElementById("processing");
 const review = document.getElementById("review");
 const complete = document.getElementById("complete");
@@ -37,7 +39,7 @@ const publicPlaylistLink = document.getElementById("public-playlist-link");
 const btnStartOver = document.getElementById("btn-start-over");
 
 function show(section) {
-  [landing, previewLoading, preview, processing, review, complete].forEach((el) => {
+  [landing, previewLoading, preview, editSection, processing, review, complete].forEach((el) => {
     if (el) el.classList.add("hidden");
   });
   if (section) section.classList.remove("hidden");
@@ -163,11 +165,20 @@ async function handleProceed() {
     alert("Please sign in with YouTube first.");
     return;
   }
+  const payload = { url: urlInput.value.trim(), privacy_status: chosenPrivacy };
+  const editPayload = editSection && !editSection.classList.contains("hidden") ? getEditPayload() : null;
+  if (editPayload) {
+    payload.privacy_status = editPayload.privacy_status;
+    chosenPrivacy = editPayload.privacy_status;
+    payload.playlist_title = editPayload.playlist_title || undefined;
+    payload.playlist_description = editPayload.playlist_description || undefined;
+    payload.tracks = editPayload.tracks;
+  }
   try {
     const res = await fetch(`${API}/process`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: urlInput.value.trim() }),
+      body: JSON.stringify(payload),
       credentials: "include",
     });
     if (!res.ok) {
@@ -244,6 +255,27 @@ async function handleMakePublic() {
   }
 }
 
+function getEditPayload() {
+  const playlist_title = editPlaylistTitle ? editPlaylistTitle.value.trim() : "";
+  const playlist_description = editPlaylistDescription ? editPlaylistDescription.value.trim() : "";
+  const privacyRadios = document.querySelectorAll('input[name="privacy"]:checked');
+  const privacy_status = privacyRadios.length ? privacyRadios[0].value : "private";
+  const tracks = [];
+  if (editTracksContainer) {
+    editTracksContainer.querySelectorAll(".edit-track").forEach((el) => {
+      const number = parseInt(el.dataset.number, 10);
+      const titleInput = el.querySelector(".edit-video-title");
+      const descInput = el.querySelector(".edit-video-description");
+      tracks.push({
+        number,
+        video_title: (titleInput && titleInput.value) ? titleInput.value.trim() : "",
+        video_description: (descInput && descInput.value) ? descInput.value.trim() : "",
+      });
+    });
+  }
+  return { playlist_title, playlist_description, tracks, privacy_status };
+}
+
 function handleStartOver() {
   previewData = null;
   currentJobId = null;
@@ -265,7 +297,9 @@ function handleStartOver() {
 // Event listeners
 btnSignin.addEventListener("click", handleSignIn);
 btnPreview.addEventListener("click", handlePreview);
-btnBack.addEventListener("click", () => show(landing));
+if (btnBack) btnBack.addEventListener("click", () => show(landing));
+if (btnEdit) btnEdit.addEventListener("click", showEditFromPreview);
+if (btnEditBack) btnEditBack.addEventListener("click", () => show(preview));
 btnProceed.addEventListener("click", handleProceed);
 btnMakePublic.addEventListener("click", handleMakePublic);
 btnStartOver.addEventListener("click", handleStartOver);

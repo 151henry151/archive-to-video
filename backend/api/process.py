@@ -28,9 +28,13 @@ jobs: dict = {}
 
 class ProcessRequest(BaseModel):
     url: str
+    privacy_status: str = "private"  # private, unlisted, or public
+    playlist_title: str | None = None
+    playlist_description: str | None = None
+    tracks: list[dict] | None = None  # [{"number": 1, "video_title": "...", "video_description": "..."}, ...]
 
 
-def run_job(job_id: str, url: str, credentials):
+def run_job(job_id: str, url: str, credentials, privacy_status: str = "private", web_overrides: dict | None = None):
     """Background task to run the upload workflow."""
     try:
         jobs[job_id]["status"] = "running"
@@ -46,7 +50,11 @@ def run_job(job_id: str, url: str, credentials):
             jobs[job_id]["progress"] = {"message": msg, "current": current, "total": total}
 
         result = uploader.process_archive_url(
-            url, interactive=False, progress_callback=progress_cb
+            url,
+            interactive=False,
+            progress_callback=progress_cb,
+            initial_privacy=privacy_status,
+            web_overrides=web_overrides,
         )
 
         if result:
@@ -73,6 +81,23 @@ def start_process(request: Request, body: ProcessRequest):
     if not url or "archive.org/details/" not in url:
         raise HTTPException(status_code=400, detail="Invalid archive.org URL")
 
+    privacy_status = (body.privacy_status or "private").strip().lower()
+    if privacy_status not in ("private", "unlisted", "public"):
+        privacy_status = "private"
+
+    web_overrides = None
+    if body.playlist_title is not None or body.playlist_description is not None or (body.tracks and len(body.tracks) > 0):
+        web_overrides = {}
+        if body.playlist_title is not None:
+            web_overrides["playlist_title"] = body.playlist_title.strip()
+        if body.playlist_description is not None:
+            web_overrides["playlist_description"] = body.playlist_description.strip()
+        if body.tracks:
+            web_overrides["tracks"] = [
+                {"number": int(t.get("number", 0)), "video_title": t.get("video_title") or "", "video_description": t.get("video_description") or ""}
+                for t in body.tracks
+            ]
+
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {
         "status": "pending",
@@ -85,6 +110,7 @@ def start_process(request: Request, body: ProcessRequest):
     thread = threading.Thread(
         target=run_job,
         args=(job_id, url, creds),
+        kwargs={"privacy_status": privacy_status, "web_overrides": web_overrides},
     )
     thread.daemon = True
     thread.start()

@@ -5,7 +5,7 @@ FastAPI application for archive-to-yt web UI.
 import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
@@ -22,7 +22,7 @@ STATIC_DIR = FRONTEND_DIR / "static"
 app = FastAPI(
     title="Archive to YouTube",
     description="Upload archive.org audio tracks to YouTube as videos",
-    version="1.0.0",
+    version="1.1.0",
 )
 
 # Session secret (required for session cookies)
@@ -48,7 +48,7 @@ app.add_middleware(
 @app.get("/health")
 def health():
     """Health check for load balancers and monitoring."""
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": "1.1.0"}
 
 
 # Mount static files if directory exists
@@ -56,8 +56,27 @@ if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
+@app.get("/terms")
+def terms():
+    """Serve Terms of Service page."""
+    path = FRONTEND_DIR / "terms.html"
+    if path.exists():
+        return FileResponse(path)
+    raise HTTPException(status_code=404, detail="Not found")
+
+
+@app.get("/privacy")
+def privacy():
+    """Serve Privacy Policy page."""
+    path = FRONTEND_DIR / "privacy.html"
+    if path.exists():
+        return FileResponse(path)
+    raise HTTPException(status_code=404, detail="Not found")
+
+
 @app.get("/")
 @app.get("/preview")
+@app.get("/edit")
 @app.get("/process")
 @app.get("/review")
 @app.get("/complete")
