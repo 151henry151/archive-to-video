@@ -10,19 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2026-01-31
 
 ### Added
-- **Web UI** – Browser-based interface alongside the CLI:
+- **Terms of Service** and **Privacy Policy** pages (footer links); Privacy Policy includes subsection on refreshing, storing, and deleting API data (no long-term cache, session-only OAuth, no persistent storage of YouTube content after the job, revoking access).
+- **Web UI edit step**: Before processing, set title and description overrides and choose privacy (private / unlisted / public) for videos and playlist (YouTube API compliance).
+
+### Changed
+- **Production release** – Dropped beta designation. Web UI and CLI are both production-ready.
+
+## [1.1.0-beta] - 2026-01-31
+
+### Added
+- **Web UI (beta)** – Browser-based interface alongside the CLI:
   - FastAPI backend with session-based YouTube OAuth (web flow); sign in once per session.
   - **Preview**: Enter archive.org URL → async preview job with real progress (fetch metadata, find audio, get durations per track). Poll `/api/preview/job/{id}` for step and progress bar.
   - **Process**: Start upload job → background run of same CLI workflow; poll `/api/job/{id}` for live progress (download, video creation, upload, playlist).
   - **Review**: After completion, link to private playlist; optional “Make public” to set videos and playlist to public via API.
-  - **Edit step**: Before processing, set title and description overrides and choose privacy (private / unlisted / public) for videos and playlist (YouTube API compliance).
   - Frontend: single-page app (landing, preview loading, preview, processing, review, complete); determinate/indeterminate progress bars and step messages.
   - Deploy: `python run_web.py` (port 18765) or Docker (`docker compose up`); path-based hosting supported via `BASE_URL` (see [WEB_UI_SETUP.md](WEB_UI_SETUP.md)).
-- **Terms of Service** and **Privacy Policy** pages (footer links); Privacy Policy includes subsection on refreshing, storing, and deleting API data (no long-term cache, session-only OAuth, no persistent storage of YouTube content after the job, revoking access).
 - **Documentation**: [WEB_UI_SETUP.md](WEB_UI_SETUP.md) for OAuth (Web client, redirect URIs), Docker, and env vars; [docs/YouTube-API-Quota-Request-Design.md](docs/YouTube-API-Quota-Request-Design.md) for quota extension requests.
 
 ### Changed
-- **Production release** – Dropped beta designation. Web UI and CLI are both production-ready.
+- Version set to **beta** again; Web UI is not fully tested in all environments. CLI remains the recommended path for production use.
 - Improved error when all YouTube uploads fail (e.g. quota exceeded): now raises a clear message with failure count and “likely due to YouTube API quota exceeded” instead of generic “Process returned no result”.
 
 ### Fixed
@@ -196,7 +203,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full documentation (README.md, ARCHITECTURE.md)
 
 [Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/151henry151/archive-to-yt/compare/v1.0.0...v1.1.0
+[1.1.0]: https://github.com/151henry151/archive-to-yt/compare/v1.1.0-beta...v1.1.0
+[1.1.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v1.0.0...v1.1.0-beta
 [1.0.0]: https://github.com/151henry151/archive-to-yt/compare/v0.6.0-beta...v1.0.0
 [0.6.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.5.0-beta...v0.6.0-beta
 [0.5.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.4.0-beta...v0.5.0-beta
