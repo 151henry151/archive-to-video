@@ -1,5 +1,9 @@
 # Archive.org to YouTube Uploader
 
+<p align="center">
+  <img src="logo.png" alt="Archive to YouTube" width="200">
+</p>
+
 A Python tool that automatically downloads audio tracks from archive.org, creates videos with static background images, and uploads them to YouTube with proper metadata and playlists. Use it from the **command line** or the **Web UI**.
 
 - **Home page:** [hromp.com/archive-to-yt](https://hromp.com/archive-to-yt/)
