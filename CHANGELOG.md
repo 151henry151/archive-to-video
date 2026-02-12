@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Web UI: "Edit titles & visibility" button** – Button did nothing when clicked. Added missing `showEditFromPreview` function and element references (`btnEdit`, `btnEditBack`, `editPlaylistTitle`, `editPlaylistDescription`, `editTracksContainer`) so the edit form loads correctly from the preview step.
-- **Terms/Privacy back link** – Back link on Terms and Privacy pages now points to the app root (`/archive-to-yt/app/`) instead of the landing page.
+- **Terms/Privacy back link** – Back link on Terms and Privacy pages now points to the app root (`/archive-to-video/app/`) instead of the landing page.
 - **Web UI session/login** – Reverted session cookie path and Secure flag changes that broke the login flow; keep default path and `https_only=False` for reliable session persistence after OAuth redirect.
 
 ### Changed
@@ -212,16 +212,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic cleanup of temporary files
 - Full documentation (README.md, ARCHITECTURE.md)
 
-[Unreleased]: https://github.com/151henry151/archive-to-yt/compare/v1.1.1...HEAD
-[1.1.1]: https://github.com/151henry151/archive-to-yt/compare/v1.1.0...v1.1.1
-[1.1.0]: https://github.com/151henry151/archive-to-yt/compare/v1.1.0-beta...v1.1.0
-[1.1.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v1.0.0...v1.1.0-beta
-[1.0.0]: https://github.com/151henry151/archive-to-yt/compare/v0.6.0-beta...v1.0.0
-[0.6.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.5.0-beta...v0.6.0-beta
-[0.5.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.4.0-beta...v0.5.0-beta
-[0.4.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.3.1-beta...v0.4.0-beta
-[0.3.1-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.3.0-beta...v0.3.1-beta
-[0.3.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.2.0-beta...v0.3.0-beta
-[0.2.0-beta]: https://github.com/151henry151/archive-to-yt/compare/v0.1.0-beta...v0.2.0-beta
-[0.1.0-beta]: https://github.com/151henry151/archive-to-yt/tag/v0.1.0-beta
+[Unreleased]: https://github.com/151henry151/archive-to-video/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/151henry151/archive-to-video/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/151henry151/archive-to-video/compare/v1.1.0-beta...v1.1.0
+[1.1.0-beta]: https://github.com/151henry151/archive-to-video/compare/v1.0.0...v1.1.0-beta
+[1.0.0]: https://github.com/151henry151/archive-to-video/compare/v0.6.0-beta...v1.0.0
+[0.6.0-beta]: https://github.com/151henry151/archive-to-video/compare/v0.5.0-beta...v0.6.0-beta
+[0.5.0-beta]: https://github.com/151henry151/archive-to-video/compare/v0.4.0-beta...v0.5.0-beta
+[0.4.0-beta]: https://github.com/151henry151/archive-to-video/compare/v0.3.1-beta...v0.4.0-beta
+[0.3.1-beta]: https://github.com/151henry151/archive-to-video/compare/v0.3.0-beta...v0.3.1-beta
+[0.3.0-beta]: https://github.com/151henry151/archive-to-video/compare/v0.2.0-beta...v0.3.0-beta
+[0.2.0-beta]: https://github.com/151henry151/archive-to-video/compare/v0.1.0-beta...v0.2.0-beta
+[0.1.0-beta]: https://github.com/151henry151/archive-to-video/tag/v0.1.0-beta
 

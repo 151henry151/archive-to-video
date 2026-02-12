@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run the archive-to-yt web UI server.
+Run the archive-to-video web UI server.
 """
 
 import os

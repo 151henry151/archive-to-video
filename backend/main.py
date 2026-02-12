@@ -1,5 +1,5 @@
 """
-FastAPI application for archive-to-yt web UI.
+FastAPI application for archive-to-video web UI.
 """
 
 import os

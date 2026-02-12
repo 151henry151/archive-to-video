@@ -5,7 +5,7 @@
 
 ## Overview
 
-Expose the archive-to-yt workflow as a web backend with API, plus a frontend GUI. Users host on their own server; each user signs into their own YouTube account. The UI mirrors the CLI flow.
+Expose the archive-to-video workflow as a web backend with API, plus a frontend GUI. Users host on their own server; each user signs into their own YouTube account. The UI mirrors the CLI flow.
 
 ## Requirements Summary
 
@@ -41,10 +41,10 @@ Use **18765** for the app inside the container. It’s high enough to avoid typi
 Example nginx config for a subdomain or path:
 
 ```nginx
-# Subdomain: archive-to-yt.example.com
+# Subdomain: archive-to-video.example.com
 server {
     listen 443 ssl;
-    server_name archive-to-yt.example.com;
+    server_name archive-to-video.example.com;
 
     location / {
         proxy_pass http://127.0.0.1:18765;
@@ -63,7 +63,7 @@ server {
 Or by path on an existing server:
 
 ```nginx
-location /archive-to-yt/ {
+location /archive-to-video/ {
     proxy_pass http://127.0.0.1:18765/;
     # ... same headers as above
 }
@@ -73,7 +73,7 @@ location /archive-to-yt/ {
 
 ```yaml
 services:
-  archive-to-yt:
+  archive-to-video:
     build: .
     ports:
       - "18765:18765"
@@ -82,15 +82,15 @@ services:
       - BASE_URL=${BASE_URL:-http://localhost:18765}
     volumes:
       - ./config:/app/config:ro
-      - archive-to-yt-temp:/app/temp
+      - archive-to-video-temp:/app/temp
 volumes:
-  archive-to-yt-temp:
+  archive-to-video-temp:
 ```
 
 ### Project structure (Docker additions)
 
 ```
-archive-to-yt/
+archive-to-video/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .dockerignore
@@ -237,7 +237,7 @@ CLI uses `InstalledAppFlow.run_local_server()` (desktop). For web:
 ## Project structure (proposed)
 
 ```
-archive-to-yt/
+archive-to-video/
 ├── Dockerfile              # Single image (Python + ffmpeg)
 ├── docker-compose.yml      # Dev/simple deploy
 ├── .dockerignore
@@ -340,7 +340,7 @@ Environment variables (or `.env`):
 
 - `SECRET_KEY` – Session signing (required)
 - `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` – Or use `client_secrets.json` with Web client
-- `BASE_URL` – For OAuth redirect (e.g. `https://archive-to-yt.example.com`); nginx forwards here
+- `BASE_URL` – For OAuth redirect (e.g. `https://archive-to-video.example.com`); nginx forwards here
 - `TEMP_DIR` – Where to store downloads/videos (default: `/app/temp` in container)
 - `PORT` – Internal port (default: `18765`)
 

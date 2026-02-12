@@ -8,7 +8,7 @@ from starlette.requests import Request
 def get_base_url(request: Request) -> str:
     """
     Build base URL from request, respecting X-Forwarded-* headers (nginx).
-    When BASE_URL is set (e.g. for path-based deployment like /archive-to-yt/app),
+    When BASE_URL is set (e.g. for path-based deployment like /archive-to-video/app),
     use that so OAuth redirects and callbacks work correctly.
     """
     base_url = os.environ.get("BASE_URL")

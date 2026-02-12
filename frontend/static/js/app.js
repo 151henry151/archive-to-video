@@ -1,4 +1,4 @@
-/* Archive to YouTube - Web UI */
+/* Archive to Video - Web UI */
 
 const API = "api";
 

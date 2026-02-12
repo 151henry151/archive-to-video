@@ -1,1 +1,1 @@
-"""Backend API for archive-to-yt web UI."""
+"""Backend API for archive-to-video web UI."""

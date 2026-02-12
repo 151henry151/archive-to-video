@@ -69,7 +69,7 @@ This tool will automate the process of downloading audio tracks from archive.org
 ## Project Structure
 
 ```
-archive-to-yt/
+archive-to-video/
 ├── README.md
 ├── ARCHITECTURE.md
 ├── requirements.txt

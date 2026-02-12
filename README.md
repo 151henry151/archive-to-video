@@ -6,8 +6,8 @@
 
 A Python tool that automatically downloads audio tracks from archive.org, creates videos with static background images, and uploads them to YouTube with proper metadata and playlists. Use it from the **command line** or the **Web UI**.
 
-- **Home page:** [hromp.com/archive-to-yt](https://hromp.com/archive-to-yt/)
-- **Live Web UI:** [hromp.com/archive-to-yt/app](https://hromp.com/archive-to-yt/app/) — try it in your browser
+- **Home page:** [hromp.com/archive-to-video](https://hromp.com/archive-to-video/)
+- **Live Web UI:** [hromp.com/archive-to-video/app](https://hromp.com/archive-to-video/app/) — try it in your browser
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ A Python tool that automatically downloads audio tracks from archive.org, create
 1. Clone this repository:
 ```bash
 git clone <repository-url>
-cd archive-to-yt
+cd archive-to-video
 ```
 
 2. Create a Python virtual environment:
@@ -111,7 +111,7 @@ python upload.py <URL> [--temp-dir DIR] [--credentials PATH]
 
 A browser-based interface with the same workflow: sign in with YouTube, enter an archive.org URL, preview, optionally edit titles and descriptions and set privacy (private/unlisted/public), then process. Uploads run in the background with live progress; you can review the playlist and optionally make it public.
 
-**Try it:** [Live Web UI](https://hromp.com/archive-to-yt/app/) | [Home page](https://hromp.com/archive-to-yt/)
+**Try it:** [Live Web UI](https://hromp.com/archive-to-video/app/) | [Home page](https://hromp.com/archive-to-video/)
 
 #### Web UI setup (OAuth and config)
 
@@ -123,7 +123,7 @@ The Web UI uses a **Web application** OAuth client (not the Desktop client used 
 4. **Authorized redirect URIs** — add the callback URL for where you will run the app:
    - Local: `http://localhost:18765/api/auth/youtube/callback`
    - Your domain: `https://your-domain.com/api/auth/youtube/callback`
-   - Path-based (e.g. hromp.com): `https://hromp.com/archive-to-yt/app/api/auth/youtube/callback`
+   - Path-based (e.g. hromp.com): `https://hromp.com/archive-to-video/app/api/auth/youtube/callback`
 5. Download the JSON and save it as **`config/client_secrets.json`**
 
 You can have both Desktop (CLI) and Web (Web UI) client IDs in the same Google Cloud project; the same `client_secrets.json` file can include both. The app uses the correct client based on how it’s run.
@@ -161,18 +161,18 @@ The Web UI runs in a container that includes Python, ffmpeg, and the app. You mu
 - **Port:** **18765** (mapped to host).
 - **Volumes:**
   - `./config` → `/app/config` (read-only) — so `config/client_secrets.json` is available inside the container.
-  - Named volume `archive-to-yt-temp` → `/app/temp` — temporary downloads and videos (persist across restarts for resume).
+  - Named volume `archive-to-video-temp` → `/app/temp` — temporary downloads and videos (persist across restarts for resume).
 - **Environment:** Set `SECRET_KEY` (required). Optionally set `PORT`, `BASE_URL` (see below).
 
 **Example with custom port and base URL (e.g. behind a reverse proxy):**
 
 ```bash
 export SECRET_KEY="your-secret-key"
-export BASE_URL="https://your-domain.com/archive-to-yt"
+export BASE_URL="https://your-domain.com/archive-to-video"
 docker compose up --build
 ```
 
-For **path-based deployment** (app served under a path like `/archive-to-yt/app/`), set `BASE_URL` to the full public URL and add that callback to OAuth redirect URIs. See [WEB_UI_SETUP.md](WEB_UI_SETUP.md) for details.
+For **path-based deployment** (app served under a path like `/archive-to-video/app/`), set `BASE_URL` to the full public URL and add that callback to OAuth redirect URIs. See [WEB_UI_SETUP.md](WEB_UI_SETUP.md) for details.
 
 #### Web UI environment variables
 
@@ -226,7 +226,7 @@ This is by design. Videos start as private. You can make them public through the
 ## File Structure
 
 ```
-archive-to-yt/
+archive-to-video/
 ├── README.md              # This file
 ├── ARCHITECTURE.md        # Technical documentation
 ├── WEB_UI_SETUP.md        # Web UI OAuth, Docker, and deployment

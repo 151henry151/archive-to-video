@@ -3,7 +3,7 @@
 # Access: http://localhost:18765
 
 services:
-  archive-to-yt:
+  archive-to-video:
     build: .
     ports:
       - "18765:18765"
@@ -13,8 +13,8 @@ services:
       - BASE_URL=${BASE_URL:-http://localhost:18765}
     volumes:
       - ./config:/app/config:ro
-      - archive-to-yt-temp:/app/temp
+      - archive-to-video-temp:/app/temp
     restart: unless-stopped
 
 volumes:
-  archive-to-yt-temp:
+  archive-to-video-temp:
